@@ -8,9 +8,6 @@ def get_free_port(bind_host: str = "127.0.0.1") -> int:
         return s.getsockname()[1]
 
 
-# Removed Paramiko-based SSH/SFTP utilities and safe_join; file management feature is deprecated.
-
-
 def is_windows_os_name(os_name: str) -> bool:
     return (os_name or "").lower().startswith("win")
 

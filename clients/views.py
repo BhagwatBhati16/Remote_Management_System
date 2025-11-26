@@ -106,7 +106,7 @@ def start_vnc(request, client_id: int):
 
     existing = getattr(client, "vnc_session", None)
     if existing and _is_process_running(existing.pid):
-        return JsonResponse({"ok": True, "already": True, "url": f"http://{existing.listen_host}:{existing.listen_port}"})
+        return JsonResponse({"ok": True, "already": True, "url": f"http://{existing.listen_host}:{existing.listen_port}/vnc.html"})
     elif existing:
         existing.delete()
 
@@ -143,7 +143,7 @@ def start_vnc(request, client_id: int):
         started_by=request.user,
     )
 
-    return JsonResponse({"ok": True, "pid": proc.pid, "url": f"http://{listen_host}:{listen_port}"})
+    return JsonResponse({"ok": True, "pid": proc.pid, "url": f"http://{listen_host}:{listen_port}/vnc.html"})
 
 
 @require_POST
