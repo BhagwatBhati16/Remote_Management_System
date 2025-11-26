@@ -1,0 +1,62 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Add Client</title><style>
+*,:after,:before{border:0 solid #e5e7eb;box-sizing:border-box}
+body{font-family: Open Sans, Arial, sans-serif;background:#111827;color:#e5e7eb;margin:0}
+.container{max-width:640px;margin:40px auto;padding:24px;background:#1f2937;border:1px solid #374151;border-radius:16px}
+.row{margin-bottom:16px}
+label{display:block;margin-bottom:8px;color:#e5e7eb}
+input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #374151;background:#111827;color:#e5e7eb}
+.actions{display:flex;gap:12px;margin-top:16px}
+.btn{padding:10px 14px;border-radius:8px;background:#374151;color:#e5e7eb;text-decoration:none}
+.btn:hover{background:#4b5563}
+.header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:#1f2937;border-bottom:1px solid #374151}
+.wrap{max-width:900px;margin:0 auto}
+.errorlist{color:#fca5a5;margin:4px 0 0 0;padding:0;list-style:none}
+/* Segmented toggle styles for Windows Version */
+.toggle-group{display:flex;gap:8px;flex-wrap:wrap}
+.toggle-option{position:relative}
+.toggle-option input{position:absolute;opacity:0;pointer-events:none}
+.toggle-option label{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;background:#111827;border:1px solid #374151;color:#e5e7eb;cursor:pointer;user-select:none;transition:background .2s,border-color .2s,transform .05s}
+.toggle-option label:hover{background:#1f2937}
+.toggle-option input:checked + label{background:#2563eb;border-color:#3b82f6;color:#f9fafb}
+.toggle-option input:focus + label{box-shadow:0 0 0 2px #1f2937,0 0 0 4px #2563eb}
+</style></head>
+<body>
+  <div class="header"><div class="wrap"><strong>Add Client</strong></div><div class="wrap"><a class="btn" href="/">Back</a></div></div>
+  <div class="container">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row">
+        <label for="id_name">PC Name</label>
+        {{ form.name }}
+        {{ form.name.errors }}
+      </div>
+      <div class="row">
+        <label for="id_ip_address">IP Address</label>
+        {{ form.ip_address }}
+        {{ form.ip_address.errors }}
+      </div>
+      <div class="row">
+        <label for="id_os_name">Windows Version</label>
+        <div class="toggle-group" role="radiogroup" aria-label="Windows Version">
+          {% for val,label in form.os_name.field.choices %}
+            <div class="toggle-option">
+              <input type="radio" id="os_{{ forloop.counter }}" name="{{ form.os_name.html_name }}" value="{{ val }}"
+                {% if form.os_name.value == val %}checked{% elif not form.is_bound and forloop.first %}checked{% endif %}>
+              <label for="os_{{ forloop.counter }}">{{ label }}</label>
+            </div>
+          {% endfor %}
+        </div>
+        {{ form.os_name.errors }}
+      </div>
+      <div class="row">
+        <label for="id_glances_port">Glances Port</label>
+        {{ form.glances_port }}
+        {{ form.glances_port.errors }}
+      </div>
+      <div class="actions">
+        <button class="btn" type="submit">Save</button>
+        <a class="btn" href="/">Cancel</a>
+      </div>
+    </form>
+  </div>
+</body></html>

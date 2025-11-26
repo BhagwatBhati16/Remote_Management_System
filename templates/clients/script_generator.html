@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Script Generator</title>
+  <style>
+    *,:after,:before{border:0 solid #374151;box-sizing:border-box}
+    body{font-family: Open Sans, Arial, sans-serif;background:#111827;color:#e5e7eb;margin:0}
+    .header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:#1f2937;border-bottom:1px solid #374151}
+    .wrap{max-width:1000px;margin:0 auto}
+    .container{max-width:1000px;margin:24px auto;padding:24px;background:#1f2937;border:1px solid #374151;border-radius:16px}
+    .section{margin-bottom:20px}
+    .section h2{margin:0 0 10px 0;font-size:16px;color:#f3f4f6}
+    label{display:block;margin-bottom:6px;color:#e5e7eb}
+    input[type="text"], input[type="number"]{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #374151;background:#111827;color:#e5e7eb}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+    .check{display:flex;gap:8px;align-items:center;padding:10px 12px;background:#111827;border:1px solid #374151;border-radius:10px}
+    .row{margin-bottom:12px}
+    .actions{display:flex;gap:12px;margin-top:16px}
+    .btn{padding:10px 14px;border-radius:8px;background:#374151;color:#e5e7eb;text-decoration:none;display:inline-block}
+    .btn:hover{background:#4b5563}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="wrap"><strong>Script Generator</strong></div>
+    <div class="wrap"><a class="btn" href="{% url 'clients:overview' %}">Back</a></div>
+  </div>
+  <div class="container">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="section">
+        <h2>ZeroTier</h2>
+        <div class="row">
+          <label for="id_zerotier_id">ZeroTier Network ID</label>
+          {{ form.zerotier_id }}
+          {% if form.zerotier_id.help_text %}<div style="color:#9ca3af;font-size:12px;margin-top:4px;">{{ form.zerotier_id.help_text }}</div>{% endif %}
+          {{ form.zerotier_id.errors }}
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Things to install</h2>
+        <div class="grid">
+          <label class="check">{{ form.install_openssh }} <span>OpenSSH Server</span></label>
+          <label class="check">{{ form.install_zerotier }} <span>ZeroTier One</span></label>
+          <label class="check">{{ form.install_tightvnc }} <span>TightVNC Server</span></label>
+          <label class="check">{{ form.install_winscp }} <span>WinSCP</span></label>
+          <label class="check">{{ form.install_sysinternals }} <span>Sysinternals Suite</span></label>
+          <label class="check">{{ form.install_nssm }} <span>NSSM</span></label>
+          <label class="check">{{ form.install_python }} <span>Python</span></label>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Glances Service</h2>
+        <label class="check">{{ form.enable_glances_service }} <span>Create Glances Web service</span></label>
+        <div class="grid" style="margin-top:10px">
+          <div>
+            <label for="id_bind_address">Bind Address</label>
+            {{ form.bind_address }}
+          </div>
+          <div>
+            <label for="id_bind_port">Glances Port</label>
+            {{ form.bind_port }}
+          </div>
+          <div>
+            <label for="id_boot_delay">Boot Delay (seconds)</label>
+            {{ form.boot_delay }}
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Firewall</h2>
+        <input type="hidden" name="firewall_rules_json" id="firewall_rules_json" />
+        <div style="overflow:auto;border:1px solid #374151;border-radius:10px;background:#111827">
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="background:#111827;border-bottom:1px solid #374151">
+                <th style="text-align:left;padding:10px 12px;color:#9ca3af">Name</th>
+                <th style="text-align:left;padding:10px 12px;color:#9ca3af">Direction</th>
+                <th style="text-align:left;padding:10px 12px;color:#9ca3af">Protocol</th>
+                <th style="text-align:left;padding:10px 12px;color:#9ca3af">Port</th>
+                <th style="width:1%;padding:10px 12px;color:#9ca3af"></th>
+              </tr>
+            </thead>
+            <tbody id="fw-body"></tbody>
+          </table>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button class="btn" type="button" id="fw-add">Add Rule</button>
+        </div>
+        <div style="color:#9ca3af;font-size:12px;margin-top:6px">Tip: Pre-populated rules include SSH (22), Glances (selected port), and VNC (5900). You can add Inbound or Outbound rules.</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" type="submit" name="download" value="1" id="download-btn">Download Script</button>
+      </div>
+    </form>
+  </div>
+  <script>
+    // Dynamic firewall rule rows
+    const fwBody = document.getElementById('fw-body');
+    const addBtn = document.getElementById('fw-add');
+    const jsonField = document.getElementById('firewall_rules_json');
+    const bindPortInput = document.getElementById('id_bind_port');
+
+    function rowTemplate(rule){
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid #374151';
+      tr.innerHTML = `
+        <td style="padding:10px 12px"><input type="text" class="fw-name" value="${rule.name||''}" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #374151;background:#0b1220;color:#e5e7eb"/></td>
+        <td style="padding:10px 12px">
+          <select class="fw-dir" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #374151;background:#0b1220;color:#e5e7eb">
+            <option ${rule.direction==='Inbound'?'selected':''}>Inbound</option>
+            <option ${rule.direction==='Outbound'?'selected':''}>Outbound</option>
+          </select>
+        </td>
+        <td style="padding:10px 12px">
+          <select class="fw-proto" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #374151;background:#0b1220;color:#e5e7eb">
+            <option ${rule.protocol==='TCP'?'selected':''}>TCP</option>
+            <option ${rule.protocol==='UDP'?'selected':''}>UDP</option>
+          </select>
+        </td>
+        <td style="padding:10px 12px"><input type="number" class="fw-port" value="${rule.port||''}" min="1" style="width:120px;padding:8px 10px;border-radius:8px;border:1px solid #374151;background:#0b1220;color:#e5e7eb"/></td>
+        <td style="padding:10px 12px"><button type="button" class="btn fw-del">Delete</button></td>
+      `;
+      tr.querySelector('.fw-del').addEventListener('click', ()=>{ tr.remove(); });
+      return tr;
+    }
+
+    function addRule(rule){ fwBody.appendChild(rowTemplate(Object.assign({direction:'Inbound',protocol:'TCP'}, rule||{}))); }
+
+    function seedDefaults(){
+      fwBody.innerHTML='';
+      addRule({name:'SSH', direction:'Inbound', protocol:'TCP', port:'22'});
+      const glPort = (bindPortInput && bindPortInput.value) ? bindPortInput.value : '61208';
+      addRule({name:'Glances', direction:'Inbound', protocol:'TCP', port: glPort});
+      addRule({name:'VNC', direction:'Inbound', protocol:'TCP', port:'5900'});
+    }
+
+    function collectRules(){
+      const rows = Array.from(fwBody.querySelectorAll('tr'));
+      return rows.map(tr=>({
+        name: tr.querySelector('.fw-name').value.trim(),
+        direction: tr.querySelector('.fw-dir').value,
+        protocol: tr.querySelector('.fw-proto').value,
+        port: tr.querySelector('.fw-port').value.trim()
+      })).filter(r=>r.name && r.port);
+    }
+
+    // On load
+    seedDefaults();
+    addBtn.addEventListener('click', ()=> addRule({}));
+
+    // Keep Glances default rule in sync when user changes bind port (only if rule still named 'Glances')
+    if (bindPortInput){
+      bindPortInput.addEventListener('change', ()=>{
+        const gl = Array.from(fwBody.querySelectorAll('tr')).find(tr=>tr.querySelector('.fw-name').value.trim().toLowerCase()==='glances');
+        if (gl) gl.querySelector('.fw-port').value = bindPortInput.value;
+      });
+    }
+
+    // Before submit, serialize rules to hidden JSON
+    document.querySelector('form').addEventListener('submit', ()=>{
+      jsonField.value = JSON.stringify(collectRules());
+    });
+  </script>
+</body>
+</html>

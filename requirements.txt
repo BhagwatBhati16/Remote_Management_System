@@ -1,0 +1,4 @@
+Django>=4.2,<5.0
+# noVNC is used via its CLI, not the Python package; install CLI separately (e.g., npm i -g novnc)
+# novnc>=1.4.0
+webssh>=1.6.2

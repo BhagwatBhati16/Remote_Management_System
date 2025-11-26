@@ -1,0 +1,33 @@
+# Python/Django
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.vscode/
+
+# Virtual environments
+.venv/
+venv/
+
+# Django sqlite db (regenerate via migrations)
+db.sqlite3
+
+# Logs and temp
+*.log
+logs/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Node/npm if present
+node_modules/
+
+# Local env/config
+.env
+.env.local
+.env.*
+
+# Build artifacts
+dist/
+build/

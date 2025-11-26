@@ -1,0 +1,190 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Client Page</title><style>@import url(https://fonts.googleapis.com/css2?family=Lato&display=swap);
+@import url(https://fonts.googleapis.com/css2?family=Open+Sans&display=swap);
+@import url(https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined);
+/* Tailwind base reset (truncated for brevity, original design preserved) */
+html,body{margin:0;padding:0;font-family:Open Sans,ui-sans-serif,system-ui,sans-serif;background:#111827;color:#D1D5DB;}
+/* Utility classes used by original markup retained below (truncated) */
+/* Remove iframe borders/outlines globally and ensure no default inline spacing */
+iframe{border:0!important;outline:none!important;box-shadow:none!important;display:block!important;}
+/* Pane containers should be borderless too */
+#vnc-view,#ssh-view,#glances-view{border:none!important;margin:0!important;padding:0!important;position:fixed!important;top:4rem!important;left:16rem!important;right:0!important;bottom:0!important;}
+
+</style>
+<!-- Tailwind CDN to restore original utility classes -->
+<script src="https://cdn.tailwindcss.com"></script>
+</head><body>
+<div id="webcrumbs">
+  <div class="flex flex-col h-screen bg-gray-900 text-gray-300">
+    <header class="bg-gray-800 text-gray-100 px-6 py-4 shadow-md flex justify-between items-center border-b border-gray-700">
+      <h1 class="font-bold text-xl tracking-wide">MANAGEMENT PANEL</h1>
+      <a href="{% url 'clients:overview' %}" class="bg-gray-700 text-gray-200 px-4 py-2 rounded-md font-medium hover:bg-gray-600 transition-colors duration-300 flex items-center gap-2">
+        <span class="material-symbols-outlined">arrow_back</span> Back Home
+      </a>
+    </header>
+    <div class="flex flex-1 overflow-hidden">
+  <aside class="bg-gray-800 w-64 shadow-sm flex flex-col transition-all duration-300 transform md:translate-x-0 -translate-x-full absolute md:relative z-10 h-[calc(100vh-4rem)]">
+        <div class="p-4 border-b border-gray-700">
+          <h2 class="font-semibold text-gray-200">{{ client.name }}</h2>
+          <p class="text-sm text-gray-400">{{ client.ip_address }}</p>
+        </div>
+        <div class="flex flex-col gap-2 p-4">
+          <button class="flex items-center gap-3 px-4 py-3 rounded-md hover:bg-gray-700 transition-colors duration-200 text-left focus:outline-none active-nav-item">
+            <span class="material-symbols-outlined">desktop_windows</span> <span>VNC</span>
+          </button>
+          <button class="flex items-center gap-3 px-4 py-3 rounded-md hover:bg-gray-700 transition-colors duration-200 text-left focus:outline-none focus:ring-2 focus:ring-gray-600" id="glances-nav-btn">
+            <span class="material-symbols-outlined">landscape</span> <span>Glances</span>
+          </button>
+          <button class="flex items-center gap-3 px-4 py-3 rounded-md hover:bg-gray-700 transition-colors duration-200 text-left focus:outline-none focus:ring-2 focus:ring-gray-600">
+            <span class="material-symbols-outlined">terminal</span> <span>SSH</span>
+          </button>
+          
+        </div>
+        <div class="mt-auto p-4 border-t border-gray-700">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+            <span class="text-sm text-gray-400">Online</span>
+          </div>
+          <div class="text-xs text-gray-500 mt-1">Last active: 2 min ago</div>
+        </div>
+      </aside>
+      <main class="flex-1 p-6 overflow-auto">
+        <div class="md:hidden mb-4">
+          <button
+            class="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-800 text-gray-200 border border-gray-700 shadow-sm hover:bg-gray-700 active:scale-[.98] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+            id="sidebar-toggle"
+            aria-label="Toggle sidebar"
+            aria-expanded="false"
+            type="button"
+          >
+            <span class="material-symbols-outlined text-gray-300">menu</span>
+            <span class="text-sm font-medium">Menu</span>
+          </button>
+        </div>
+        <div id="default-center" class="flex items-center justify-center h-full">
+          <div class="bg-gray-800 p-8 rounded-lg shadow-md text-center max-w-md border border-gray-700">
+            <span class="material-symbols-outlined text-6xl text-gray-600 mb-4">devices</span>
+            <h2 class="text-xl font-semibold text-gray-200 mb-2">Client Dashboard</h2>
+            <p class="text-gray-400 mb-6">Select an option from the sidebar to manage this client.</p>
+            <div class="flex flex-wrap justify-center gap-3">
+              <div class="flex items-center gap-2 px-3 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">
+                <span class="material-symbols-outlined text-gray-400">memory</span>
+                <span class="text-sm text-gray-300">{{ client.os_name|default:"Windows" }}</span>
+              </div>
+              <div class="flex items-center gap-2 px-3 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">
+                <span class="material-symbols-outlined text-gray-400">lan</span>
+                <span class="text-sm text-gray-300">{{ client.ip_address }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Dynamic panes (hidden by default) -->
+  <div id="vnc-view" style="display:none;" class="fixed">
+          <div class="absolute top-2 right-2 flex gap-2 z-10">
+            <button id="vnc-stop-btn" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-md text-sm">Stop</button>
+          </div>
+          <iframe id="vnc-iframe" style="width:100%; height:100%; border:0; outline:none;"></iframe>
+        </div>
+  <div id="glances-view" style="display:none;" class="fixed">
+          <div class="absolute top-2 right-2 flex gap-2 z-10">
+            <a href="{{ glances_url }}" target="_blank" rel="noopener" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-sm">Open External</a>
+          </div>
+          <iframe id="glances-iframe" src="about:blank" style="width:100%; height:100%; border:0; outline:none;"></iframe>
+        </div>
+  <div id="ssh-view" style="display:none;" class="fixed">
+          <div class="absolute top-2 right-2 flex gap-2 z-10">
+            <button id="ssh-stop-btn" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-md text-sm">Stop</button>
+          </div>
+          <iframe id="ssh-iframe" style="width:100%; height:100%; border:0; outline:none;"></iframe>
+        </div>
+        
+      </main>
+    </div>
+  </div>
+</div>
+<script>
+  // Minimal integrations for VNC, Glances, and WebSSH while keeping the original look
+  document.addEventListener('DOMContentLoaded', function(){
+    function getCookie(name){ const value = `; ${document.cookie}`; const parts = value.split(`; ${name}=`); if(parts.length===2) return parts.pop().split(';').shift(); }
+    const csrftoken = getCookie('csrftoken');
+    const navItems = document.querySelectorAll('aside button');
+    const vncBtn = navItems[0];
+  const glancesBtn = document.getElementById('glances-nav-btn');
+    const sshBtn = navItems[2];
+
+    const defaultCenter = document.getElementById('default-center');
+    const panes = {
+      vnc: document.getElementById('vnc-view'),
+      glances: document.getElementById('glances-view'),
+      ssh: document.getElementById('ssh-view'),
+    };
+    function hideAll(){ Object.values(panes).forEach(p=>{ if(p) p.style.display='none'; }); if(defaultCenter) defaultCenter.style.display='flex'; }
+    function showPane(key){ if(defaultCenter) defaultCenter.style.display='none'; Object.entries(panes).forEach(([k,p])=>{ if(p) p.style.display = (k===key? 'block':'none'); }); }
+
+    // VNC
+    function startVnc(){
+      const iframe = document.getElementById('vnc-iframe');
+      if (iframe && iframe.src && iframe.src !== 'about:blank'){ showPane('vnc'); return; }
+      fetch("{% url 'clients:start_vnc' client.id %}", { method:'POST', headers:{'X-CSRFToken': csrftoken} })
+        .then(r=>r.ok ? r.json() : r.text().then(t=>{throw new Error(t||('HTTP '+r.status))}))
+        .then(d=>{ if(d.ok && d.url){ iframe.src = d.url; showPane('vnc'); } else { alert(d.error||'Failed to start VNC'); } })
+        .catch(err=>alert('Error: '+err));
+    }
+    function stopVnc(){
+      fetch("{% url 'clients:stop_vnc' client.id %}", { method:'POST', headers:{'X-CSRFToken': csrftoken} })
+        .then(r=>r.ok ? r.json() : r.text().then(t=>{throw new Error(t||('HTTP '+r.status))}))
+        .then(d=>{ const iframe = document.getElementById('vnc-iframe'); if(iframe) iframe.src='about:blank'; hideAll(); })
+        .catch(err=>alert('Error: '+err));
+    }
+  function toggleVnc(){ const v = panes.vnc; if(v && v.style.display==='block'){ stopVnc(); } else { startVnc(); } }
+
+    // Glances (no backend needed, just iframe to client glances)
+    function openGlances(){
+      const iframe = document.getElementById('glances-iframe');
+      if(iframe && (iframe.src === 'about:blank' || iframe.src === '')){
+        iframe.src = '{{ glances_url }}';
+      }
+      showPane('glances');
+    }
+
+    // WebSSH
+    function openSSH(){
+      const iframe = document.getElementById('ssh-iframe');
+      fetch("{% url 'clients:start_ssh' client.id %}", { method:'POST', headers:{'X-CSRFToken': csrftoken} })
+        .then(r=>r.ok ? r.json() : r.text().then(t=>{throw new Error(t||('HTTP '+r.status))}))
+        .then(d=>{ if(d.ok && d.url){ iframe.src = d.url; showPane('ssh'); } else { alert(d.error||'Failed to start SSH'); } })
+        .catch(err=>alert('Error: '+err));
+    }
+    function stopSSH(){
+      fetch("{% url 'clients:stop_ssh' client.id %}", { method:'POST', headers:{'X-CSRFToken': csrftoken} })
+        .then(r=>r.ok ? r.json() : r.text().then(t=>{throw new Error(t||('HTTP '+r.status))}))
+        .then(d=>{ const iframe = document.getElementById('ssh-iframe'); if(iframe) iframe.src='about:blank'; hideAll(); })
+        .catch(err=>alert('Error: '+err));
+    }
+
+    if (vncBtn) vncBtn.addEventListener('click', function(e){ e.preventDefault(); toggleVnc(); });
+    if (glancesBtn) glancesBtn.addEventListener('click', function(e){ e.preventDefault(); openGlances(); });
+    if (sshBtn) sshBtn.addEventListener('click', function(e){ e.preventDefault(); openSSH(); });
+
+    // Attach explicit Start/Stop buttons
+  const vt = document.getElementById('vnc-stop-btn'); if (vt) vt.onclick = ()=>{ stopVnc(); };
+  const st = document.getElementById('ssh-stop-btn'); if (st) st.onclick = ()=>{ stopSSH(); };
+
+    // Mobile sidebar toggle styling + behavior
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.querySelector('aside');
+    if (sidebarToggle && sidebar) {
+      sidebarToggle.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const isHidden = sidebar.classList.contains('-translate-x-full');
+        if (isHidden) {
+          sidebar.classList.remove('-translate-x-full');
+          sidebarToggle.setAttribute('aria-expanded','true');
+        } else {
+          sidebar.classList.add('-translate-x-full');
+          sidebarToggle.setAttribute('aria-expanded','false');
+        }
+      });
+    }
+  });
+  </script>
+</body></html>
