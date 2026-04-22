@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SSH — {{ client.name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      background: #0a0e17;
+      color: #e2e8f0;
+      font-family: 'Inter', monospace;
+    }
+
+    /* Loading overlay — shown until iframe loads */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      background: #0a0e17;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      transition: opacity .4s, visibility .4s;
+    }
+    .loading-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #252d44;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: #8892a8; }
+
+    /* WebSSH iframe fills the page */
+    .webssh-frame {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #0a0e17;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+</head>
+<body>
+  <!-- Dark loading screen -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Connecting to {{ client.name }}…</div>
+  </div>
+
+  <!-- WebSSH iframe -->
+  <iframe
+    id="webssh-frame"
+    class="webssh-frame"
+    src="{{ webssh_url }}"
+    allow="clipboard-read; clipboard-write"
+  ></iframe>
+
+  <script>
+    const iframe = document.getElementById('webssh-frame');
+    const overlay = document.getElementById('loading-overlay');
+
+    // Hide loading overlay once iframe loads (whether it shows terminal or form)
+    iframe.addEventListener('load', function() {
+      // Give xterm.js a moment to initialize
+      setTimeout(function() {
+        overlay.classList.add('hidden');
+      }, 600);
+    });
+
+    // Fallback: hide overlay after 5 seconds regardless
+    setTimeout(function() {
+      overlay.classList.add('hidden');
+    }, 5000);
+  </script>
+</body>
+</html>

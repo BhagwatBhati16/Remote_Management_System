@@ -1,56 +1,81 @@
-# VNC Management (Django)
+# Remote Management System (RMS)
 
-Minimal cleaned repository for deployment/upload.
+A web-based lab infrastructure management tool built with **Django** that allows administrators to **remotely manage, monitor, and provision** Windows PCs from a single browser dashboard.
 
-## Quickstart (Windows PowerShell)
+## Features
 
-```powershell
-# 1) Create & activate venv (optional but recommended)
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+- **Dashboard** — Real-time overview of all client PCs (online/offline, hardware stats, OS info)
+- **Remote Desktop (VNC)** — View and control any PC's screen via noVNC in the browser
+- **Remote Terminal (SSH)** — Browser-based PowerShell terminal via WebSSH
+- **File Manager (SFTP)** — Upload, download, rename, delete files on any PC remotely
+- **Software Deployment** — Push software to one or multiple PCs simultaneously via Chocolatey or local installers
+- **Alert Monitoring** — Detect when students run specific applications or visit flagged websites, with real-time alerts
+- **Auto-Provisioning** — Generate PowerShell scripts to configure fresh PCs with all required software, passwords, firewall rules, and auto-register with RMS
 
-# 2) Install deps
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Backend | Python, Django 6.0 |
+| Database | SQLite |
+| Remote Desktop | TightVNC + noVNC + Websockify |
+| Remote Terminal | OpenSSH + WebSSH |
+| File Transfer | Paramiko (SFTP over SSH) |
+| Monitoring | Glances REST API + PowerShell agent |
+| Provisioning | PowerShell + Chocolatey |
+| Networking | ZeroTier (optional VPN) |
+
+## Project Structure
+
+```
+├── clients/          # Core app: client management, SFTP, VNC, SSH, script generator
+├── alerts/           # Alert monitoring system (process/window title detection)
+├── deploy/           # Software deployment engine
+├── templates/        # HTML templates for all pages
+├── scripts/          # Client-side scripts (monitor agent, launcher)
+├── static/           # Static assets (alert sounds)
+├── vnc_management/   # Django project settings and URL routing
+├── manage.py         # Django management script
+└── requirements.txt  # Python dependencies
+```
+
+## Quick Start
+
+```bash
+# Install dependencies
 pip install -r requirements.txt
 
-# 3) Migrate DB and create admin (creates new db.sqlite3)
+# Run database migrations
 python manage.py migrate
+
+# Create admin user
 python manage.py createsuperuser
 
-# 4) Run server
-python manage.py runserver
+# Start the server
+python manage.py runserver 0.0.0.0:8000
 ```
 
-Open http://127.0.0.1:8000/ for the panel.
-Open http://127.0.0.1:8000/admin/ to add Clients.
+Then open `http://localhost:8000` in your browser.
 
-## Repository Layout (minimal)
-```
-manage.py
-requirements.txt
-vnc_management/        # Project settings
-clients/               # App (models, views, migrations, utils)
-templates/clients/     # add_client.html, main_page.html, client_page.html, script_generator.html
-static/                # (add static assets as needed)
-```
+## Client Setup
 
-Generated/ephemeral artifacts removed: helper PowerShell scripts, alternate HTML prototypes, logs and scratch files.
+1. Open the **Script Generator** from the dashboard
+2. Configure passwords, software, and network settings
+3. Download the generated PowerShell script
+4. Run the script on each client PC as Administrator
+5. The PC will auto-register and appear on the dashboard
 
-## VNC Usage
-1. Overview page lists clients.
-2. Click "Start VNC" on a client page. Backend runs:
-   `novnc --target <client_ip>:5900 --listen 127.0.0.1:6080`
-3. Page shows iframe to http://127.0.0.1:6080.
-4. "Stop VNC" terminates process and clears session.
+## Requirements
 
-## SSH Usage (Web Terminal)
-Requires `webssh` (installed via `pip install -r requirements.txt`). From client page click "SSH"; backend launches `python -m webssh` bound locally, then iframe passes hostname automatically. Use credentials/key in UI. "Stop SSH" terminates the process.
+- Python 3.10+
+- Django 6.0+
+- Paramiko (SSH/SFTP)
+- Client PCs: Windows 10/11 with OpenSSH Server
 
-## Notes
-* Ensure `novnc` CLI is on PATH (install separately, e.g. `npm i -g novnc` or system package).
-* Ensure `webssh` Python package is installed.
-* Start/stop endpoints require authenticated staff/admin.
-* Sessions tracked via `VNCSession` and `SSHSession`; stale PIDs are cleaned on page load.
-* Regenerate `db.sqlite3` any time via migrations.
+## Author
 
-## Optional Script Generator
-Access under `tools/script-generator/` to download a customizable PowerShell setup script for Windows hosts.
+**Bhagwat Singh Bhati**
+
+## License
+
+This project is for educational purposes.

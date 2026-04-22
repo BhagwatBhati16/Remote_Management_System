@@ -1,0 +1,220 @@
+{% load static %}
+<!-- ═══════════════════════════════════════════════════════════════════
+     RMS LIVE ALERT TOAST NOTIFICATIONS
+     Include this on EVERY page to get real-time alert popups + sound.
+     ═══════════════════════════════════════════════════════════════════ -->
+<style>
+  /* Toast container */
+  #rms-toast-container {
+    position: fixed; top: 16px; right: 16px; z-index: 99999;
+    display: flex; flex-direction: column; gap: 10px;
+    pointer-events: none; max-width: 400px;
+  }
+  .rms-toast {
+    pointer-events: auto;
+    background: linear-gradient(135deg, #1a2035 0%, #1e1640 100%);
+    border: 1px solid #2d3555;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex; gap: 12px; align-items: flex-start;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5), 0 0 0 1px rgba(99,102,241,.15);
+    animation: rmsToastIn .35s cubic-bezier(.4,0,.2,1);
+    cursor: pointer;
+    transition: opacity .3s, transform .3s;
+    min-width: 320px;
+  }
+  .rms-toast.removing {
+    opacity: 0; transform: translateX(60px);
+  }
+  @keyframes rmsToastIn {
+    from { opacity:0; transform:translateX(60px) scale(.95); }
+    to { opacity:1; transform:translateX(0) scale(1); }
+  }
+  .rms-toast-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-size: 18px;
+  }
+  .rms-toast-icon.process { background: rgba(239,68,68,.2); }
+  .rms-toast-icon.window_title { background: rgba(245,158,11,.2); }
+  .rms-toast-body { flex: 1; min-width: 0; }
+  .rms-toast-title {
+    font-size: 13px; font-weight: 700; color: #f1f5f9;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .rms-toast-meta {
+    font-size: 11px; color: #8892a8; margin-top: 3px;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .rms-toast-close {
+    background: none; border: none; color: #8892a8; cursor: pointer;
+    font-size: 16px; padding: 2px; line-height: 1; flex-shrink: 0;
+    transition: color .15s;
+  }
+  .rms-toast-close:hover { color: #f1f5f9; }
+
+  /* Sound toggle */
+  .rms-sound-toggle {
+    background: rgba(255,255,255,.06); border: 1px solid #252d44;
+    color: #e2e8f0; padding: 6px 8px; border-radius: 8px;
+    cursor: pointer; font-size: 16px; line-height: 1;
+    transition: all .2s; display: inline-flex; align-items: center;
+    font-family: inherit;
+  }
+  .rms-sound-toggle:hover { background: rgba(255,255,255,.1); }
+  .rms-sound-toggle.muted { color: #8892a8; }
+</style>
+
+<div id="rms-toast-container"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  const POLL_INTERVAL = 15000;  // 15 seconds
+  const TOAST_DURATION = 10000; // 10 seconds auto-dismiss
+  const MAX_TOASTS = 5;
+
+  let lastPollTime = new Date().toISOString();
+  let knownAlertIds = new Set();
+  let soundEnabled = localStorage.getItem('rms_alert_sound') !== 'off';
+
+  // -- Sound toggle button --
+  function initSoundToggle() {
+    // Find the alert bell in the page and add a sound toggle next to it
+    const bell = document.getElementById('alert-bell');
+    if (!bell) return;
+
+    const btn = document.createElement('button');
+    btn.className = 'rms-sound-toggle' + (soundEnabled ? '' : ' muted');
+    btn.id = 'rms-sound-toggle';
+    btn.title = soundEnabled ? 'Alert sound: ON' : 'Alert sound: OFF';
+    btn.innerHTML = soundEnabled ? '🔊' : '🔇';
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      soundEnabled = !soundEnabled;
+      localStorage.setItem('rms_alert_sound', soundEnabled ? 'on' : 'off');
+      btn.innerHTML = soundEnabled ? '🔊' : '🔇';
+      btn.title = soundEnabled ? 'Alert sound: ON' : 'Alert sound: OFF';
+      btn.className = 'rms-sound-toggle' + (soundEnabled ? '' : ' muted');
+    });
+
+    bell.parentNode.insertBefore(btn, bell);
+  }
+
+  // -- Toast display --
+  function showToast(alert) {
+    const container = document.getElementById('rms-toast-container');
+    if (!container) return;
+
+    // Limit to MAX_TOASTS
+    while (container.children.length >= MAX_TOASTS) {
+      container.removeChild(container.lastChild);
+    }
+
+    const icon = alert.alert_type === 'process' ? '🖥️' : '🌐';
+    const typeCls = alert.alert_type || 'window_title';
+
+    const toast = document.createElement('div');
+    toast.className = 'rms-toast';
+    toast.innerHTML = `
+      <div class="rms-toast-icon ${typeCls}">${icon}</div>
+      <div class="rms-toast-body">
+        <div class="rms-toast-title">${escHtml(alert.detected_name)}</div>
+        <div class="rms-toast-meta">${escHtml(alert.client_name)} · ${alert.client_ip} · just now</div>
+      </div>
+      <button class="rms-toast-close" title="Close">&times;</button>
+    `;
+
+    toast.addEventListener('click', function(e) {
+      if (e.target.classList.contains('rms-toast-close')) {
+        removeToast(toast);
+      } else {
+        window.location.href = '/alerts/';
+      }
+    });
+
+    container.insertBefore(toast, container.firstChild);
+
+    // Auto-dismiss
+    setTimeout(function() { removeToast(toast); }, TOAST_DURATION);
+  }
+
+  function removeToast(toast) {
+    if (!toast || !toast.parentNode) return;
+    toast.classList.add('removing');
+    setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // -- Play alert sound --
+  function playAlertSound() {
+    if (!soundEnabled) return;
+    try {
+      const audio = new Audio('/static/sound/alert_sound.mp3');
+      audio.volume = 0.7;
+      audio.play().catch(function() {}); // ignore autoplay restriction
+    } catch(e) {}
+  }
+
+  // -- Poll for recent alerts --
+  function pollRecentAlerts() {
+    const url = '/api/alerts/recent/?since=' + encodeURIComponent(lastPollTime);
+    fetch(url, { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (!d.ok) return;
+
+        // Update badge count on any page
+        const badge = document.getElementById('alert-badge');
+        const statEl = document.getElementById('stat-alerts');
+        const count = d.count || 0;
+        if (badge) {
+          if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+          } else {
+            badge.classList.add('hidden');
+          }
+        }
+        if (statEl) statEl.textContent = count;
+
+        // Check for genuinely new alerts
+        const newAlerts = [];
+        (d.items || []).forEach(function(a) {
+          if (!knownAlertIds.has(a.id)) {
+            newAlerts.push(a);
+            knownAlertIds.add(a.id);
+          }
+        });
+
+        if (newAlerts.length > 0) {
+          // Show toasts
+          newAlerts.forEach(function(a) { showToast(a); });
+          // Play sound once for the batch
+          playAlertSound();
+          // Dispatch custom event for pages that want to auto-update (e.g. alerts dashboard)
+          window.dispatchEvent(new CustomEvent('rms-new-alerts', { detail: { alerts: newAlerts, count: count } }));
+        }
+
+        lastPollTime = new Date().toISOString();
+      })
+      .catch(function() {});
+  }
+
+  // -- Init --
+  document.addEventListener('DOMContentLoaded', function() {
+    initSoundToggle();
+    // Initial poll after a short delay
+    setTimeout(pollRecentAlerts, 2000);
+    setInterval(pollRecentAlerts, POLL_INTERVAL);
+  });
+})();
+</script>

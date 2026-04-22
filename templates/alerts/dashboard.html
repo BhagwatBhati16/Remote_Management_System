@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring Alerts — RMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined" rel="stylesheet">
+  <style>
+    :root { --bg:#0b0f1a; --surface:#141929; --card:#1a2035; --border:#252d44; --text:#e2e8f0; --sub:#8892a8; --accent:#6366f1; --accent2:#818cf8; --danger:#ef4444; --success:#22c55e; --warning:#f59e0b; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html { height:100%; }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100%; }
+    a { text-decoration:none; color:inherit; }
+    .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-size:20px; line-height:1; color:var(--sub); }
+
+    .header { background:linear-gradient(135deg,#141929 0%,#1a1040 100%); border-bottom:1px solid var(--border); padding:0 32px; height:64px; display:flex; align-items:center; justify-content:space-between; }
+    .header-left { display:flex; align-items:center; gap:14px; }
+    .logo { width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--danger),#f97316);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(239,68,68,.3) }
+    .logo .material-symbols-outlined { color:#fff;font-size:18px }
+    .header h1 { font-size:17px; font-weight:700; color:#f1f5f9; }
+    .header-right { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .btn { background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--text); padding:8px 16px; border-radius:10px; font-weight:500; display:inline-flex; gap:7px; align-items:center; font-size:13px; transition:all .2s; font-family:inherit; cursor:pointer; }
+    .btn:hover { background:rgba(255,255,255,.1); }
+    .btn-danger { background:var(--danger); border-color:transparent; color:#fff; }
+    .btn-danger:hover { background:#dc2626; }
+    .btn-accent { background:var(--accent); border-color:transparent; color:#fff; }
+    .btn-accent:hover { background:var(--accent2); }
+
+    .container { max-width:1200px; margin:0 auto; padding:24px 32px; }
+
+    /* Stats bar */
+    .alert-stats { display:flex; gap:16px; margin-bottom:24px; }
+    .alert-stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 20px; flex:1; display:flex; align-items:center; gap:14px; }
+    .alert-stat-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; }
+    .alert-stat-icon .material-symbols-outlined { font-size:22px; color:#fff; }
+    .alert-stat-value { font-size:24px; font-weight:800; }
+    .alert-stat-label { font-size:12px; color:var(--sub); margin-top:2px; }
+
+    /* Alert list */
+    .alert-list { display:flex; flex-direction:column; gap:10px; }
+    .alert-item {
+      background:var(--surface); border:1px solid var(--border); border-radius:14px;
+      padding:16px 20px; display:flex; align-items:center; gap:16px;
+      transition:all .2s;
+    }
+    .alert-item:hover { border-color:rgba(239,68,68,.3); }
+    .alert-item.process { border-left:3px solid var(--danger); }
+    .alert-item.window_title { border-left:3px solid var(--warning); }
+
+    .alert-check { width:18px; height:18px; border-radius:4px; border:2px solid var(--border); cursor:pointer; flex-shrink:0; transition:all .15s; accent-color:var(--accent); }
+    .alert-check:checked { border-color:var(--accent); }
+
+    .alert-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .alert-icon.process { background:rgba(239,68,68,.15); }
+    .alert-icon.process .material-symbols-outlined { color:var(--danger); }
+    .alert-icon.window_title { background:rgba(245,158,11,.15); }
+    .alert-icon.window_title .material-symbols-outlined { color:var(--warning); }
+
+    .alert-info { flex:1; min-width:0; }
+    .alert-detected { font-size:14px; font-weight:600; color:#f1f5f9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .alert-meta { font-size:12px; color:var(--sub); margin-top:3px; display:flex; gap:12px; flex-wrap:wrap; }
+    .alert-meta span { display:inline-flex; align-items:center; gap:4px; }
+
+    .badge { padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+    .badge-process { background:rgba(239,68,68,.15); color:#fca5a5; }
+    .badge-window { background:rgba(245,158,11,.15); color:#fcd34d; }
+
+    .alert-actions { display:flex; gap:6px; flex-shrink:0; }
+    .dismiss-btn, .delete-btn {
+      background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--sub);
+      padding:6px 12px; border-radius:8px; font-size:12px; cursor:pointer;
+      font-family:inherit; font-weight:500; transition:all .15s;
+      display:inline-flex; gap:4px; align-items:center;
+    }
+    .dismiss-btn:hover { background:var(--success); color:#fff; border-color:var(--success); }
+    .delete-btn:hover { background:var(--danger); color:#fff; border-color:var(--danger); }
+
+    /* Selection toolbar */
+    .selection-toolbar {
+      background:var(--surface); border:1px solid var(--accent); border-radius:12px;
+      padding:10px 16px; margin-bottom:16px; display:none;
+      align-items:center; gap:12px; animation: rmsToastIn .2s ease;
+    }
+    .selection-toolbar.visible { display:flex; }
+    .selection-toolbar .sel-count { font-size:13px; font-weight:600; color:#f1f5f9; flex:1; }
+    .selection-toolbar .btn { font-size:12px; padding:6px 12px; }
+
+    .empty-state { text-align:center; padding:60px 20px; color:var(--sub); }
+    .empty-icon { font-size:48px; color:var(--success); margin-bottom:12px; }
+    .empty-title { font-size:18px; font-weight:700; color:#f1f5f9; margin-bottom:6px; }
+    .empty-sub { font-size:13px; }
+
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo"><span class="material-symbols-outlined">notifications_active</span></div>
+      <h1>Monitoring Alerts</h1>
+    </div>
+    <div class="header-right">
+      <a href="{% url 'alerts:rules_manage' %}" class="btn">
+        <span class="material-symbols-outlined" style="font-size:16px;color:var(--text)">rule_settings</span> Manage Rules
+      </a>
+      <button class="btn btn-accent" id="deploy-agent-btn" onclick="deployAgent()">
+        <span class="material-symbols-outlined" style="font-size:16px;color:#fff">rocket_launch</span> Deploy Agent
+      </button>
+      <a href="{% url 'alerts:history' %}" class="btn">
+        <span class="material-symbols-outlined" style="font-size:16px;color:var(--text)">history</span> History
+      </a>
+      {% if alerts %}
+      <button class="btn btn-danger" id="dismiss-all-btn">
+        <span class="material-symbols-outlined" style="font-size:16px;color:#fff">done_all</span> Dismiss All
+      </button>
+      <button class="btn btn-danger" id="delete-all-btn" style="background:#991b1b">
+        <span class="material-symbols-outlined" style="font-size:16px;color:#fff">delete_forever</span> Delete All
+      </button>
+      {% endif %}
+      <a href="{% url 'clients:overview' %}" class="btn">
+        <span class="material-symbols-outlined" style="font-size:16px;color:var(--text)">arrow_back</span> Dashboard
+      </a>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Stats -->
+    <div class="alert-stats">
+      <div class="alert-stat">
+        <div class="alert-stat-icon" style="background:linear-gradient(135deg,var(--danger),#f97316)">
+          <span class="material-symbols-outlined">warning</span>
+        </div>
+        <div>
+          <div class="alert-stat-value" id="active-count">{{ active_count }}</div>
+          <div class="alert-stat-label">Active Alerts</div>
+        </div>
+      </div>
+      <div class="alert-stat">
+        <div class="alert-stat-icon" style="background:linear-gradient(135deg,#ef4444,#dc2626)">
+          <span class="material-symbols-outlined">sports_esports</span>
+        </div>
+        <div>
+          <div class="alert-stat-value" id="process-count">{{ process_count }}</div>
+          <div class="alert-stat-label">Process Alerts</div>
+        </div>
+      </div>
+      <div class="alert-stat">
+        <div class="alert-stat-icon" style="background:linear-gradient(135deg,var(--warning),#d97706)">
+          <span class="material-symbols-outlined">language</span>
+        </div>
+        <div>
+          <div class="alert-stat-value" id="browser-count">{{ browser_count }}</div>
+          <div class="alert-stat-label">Browser Alerts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Selection toolbar -->
+    <div class="selection-toolbar" id="selection-toolbar">
+      <span class="sel-count" id="sel-count">0 selected</span>
+      <button class="btn" onclick="selectAllAlerts()">Select All</button>
+      <button class="btn" onclick="deselectAllAlerts()">Deselect All</button>
+      <button class="btn btn-danger" onclick="deleteSelectedAlerts()">
+        <span class="material-symbols-outlined" style="font-size:14px;color:#fff">delete</span> Delete Selected
+      </button>
+    </div>
+
+    {% if alerts %}
+    <div class="alert-list" id="alert-list">
+      {% for alert in alerts %}
+      <div class="alert-item {{ alert.alert_type }}" data-id="{{ alert.id }}">
+        <input type="checkbox" class="alert-check" data-alert-id="{{ alert.id }}" onchange="updateSelectionToolbar()">
+        <div class="alert-icon {{ alert.alert_type }}">
+          <span class="material-symbols-outlined">
+            {% if alert.alert_type == 'process' %}sports_esports{% else %}language{% endif %}
+          </span>
+        </div>
+        <div class="alert-info">
+          <div class="alert-detected">{{ alert.detected_name }}</div>
+          <div class="alert-meta">
+            <span><span class="material-symbols-outlined" style="font-size:14px">computer</span> {{ alert.hostname|default:alert.client_ip }}</span>
+            <span><span class="material-symbols-outlined" style="font-size:14px">lan</span> {{ alert.client_ip }}</span>
+            <span><span class="material-symbols-outlined" style="font-size:14px">schedule</span> {{ alert.received_at|timesince }} ago</span>
+          </div>
+        </div>
+        <span class="badge {% if alert.alert_type == 'process' %}badge-process{% else %}badge-window{% endif %}">
+          {% if alert.alert_type == 'process' %}Process{% else %}Browser{% endif %}
+        </span>
+        <div class="alert-actions">
+          <button class="dismiss-btn" onclick="dismissAlert({{ alert.id }}, this)">
+            <span class="material-symbols-outlined" style="font-size:14px">check</span> Dismiss
+          </button>
+          <button class="delete-btn" onclick="deleteAlert({{ alert.id }}, this)">
+            <span class="material-symbols-outlined" style="font-size:14px">delete</span>
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon"><span class="material-symbols-outlined" style="font-size:48px;color:var(--success)">verified</span></div>
+      <div class="empty-title">All Clear</div>
+      <div class="empty-sub">No active alerts. All clients are behaving. 🎉</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <script>
+    const csrftoken = '{{ csrf_token }}';
+
+    // ── Dismiss ──
+    function dismissAlert(id, btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px">hourglass_top</span> …';
+      fetch(`/alerts/${id}/dismiss/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) { removeAlertItem(btn.closest('.alert-item')); }
+      });
+    }
+
+    // ── Delete single ──
+    function deleteAlert(id, btn) {
+      if (!confirm('Permanently delete this alert?')) return;
+      btn.disabled = true;
+      fetch(`/alerts/${id}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken },
+        credentials: 'same-origin',
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) { removeAlertItem(btn.closest('.alert-item')); }
+      });
+    }
+
+    // ── Delete selected ──
+    function deleteSelectedAlerts() {
+      const ids = getSelectedIds();
+      if (!ids.length) return;
+      if (!confirm(`Permanently delete ${ids.length} alert(s)?`)) return;
+      fetch('/alerts/delete-selected/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+        credentials: 'same-origin',
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) {
+          ids.forEach(id => {
+            const item = document.querySelector(`.alert-item[data-id="${id}"]`);
+            if (item) removeAlertItem(item);
+          });
+        }
+      });
+    }
+
+    // ── Delete All ──
+    document.getElementById('delete-all-btn')?.addEventListener('click', function() {
+      if (!confirm('PERMANENTLY DELETE all active alerts? This cannot be undone.')) return;
+      this.disabled = true;
+      fetch('/alerts/delete-all/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope: 'active' }),
+        credentials: 'same-origin',
+      })
+      .then(r => r.json())
+      .then(d => { if (d.ok) location.reload(); });
+    });
+
+    // ── Dismiss All ──
+    document.getElementById('dismiss-all-btn')?.addEventListener('click', function() {
+      if (!confirm('Dismiss all active alerts?')) return;
+      this.disabled = true;
+      fetch('{% url "alerts:dismiss_all" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken },
+        credentials: 'same-origin',
+      })
+      .then(r => r.json())
+      .then(d => { if (d.ok) location.reload(); });
+    });
+
+    // ── Selection helpers ──
+    function getSelectedIds() {
+      return [...document.querySelectorAll('.alert-check:checked')].map(c => parseInt(c.dataset.alertId));
+    }
+    function updateSelectionToolbar() {
+      const ids = getSelectedIds();
+      const toolbar = document.getElementById('selection-toolbar');
+      if (ids.length > 0) {
+        toolbar.classList.add('visible');
+        document.getElementById('sel-count').textContent = `${ids.length} selected`;
+      } else {
+        toolbar.classList.remove('visible');
+      }
+    }
+    function selectAllAlerts() {
+      document.querySelectorAll('.alert-check').forEach(c => c.checked = true);
+      updateSelectionToolbar();
+    }
+    function deselectAllAlerts() {
+      document.querySelectorAll('.alert-check').forEach(c => c.checked = false);
+      updateSelectionToolbar();
+    }
+
+    // ── Remove item with animation ──
+    function removeAlertItem(item) {
+      if (!item) return;
+      item.style.opacity = '0';
+      item.style.transform = 'translateX(40px)';
+      item.style.transition = 'all .3s';
+      setTimeout(() => {
+        item.remove();
+        updateCounts();
+      }, 300);
+    }
+
+    function updateCounts() {
+      const items = document.querySelectorAll('.alert-item');
+      const total = items.length;
+      let proc = 0, browser = 0;
+      items.forEach(i => {
+        if (i.classList.contains('process')) proc++;
+        if (i.classList.contains('window_title')) browser++;
+      });
+      document.getElementById('active-count').textContent = total;
+      document.getElementById('process-count').textContent = proc;
+      document.getElementById('browser-count').textContent = browser;
+      if (total === 0) {
+        const list = document.getElementById('alert-list');
+        if (list) list.innerHTML = '';
+        let es = document.getElementById('empty-state');
+        if (!es) {
+          es = document.createElement('div');
+          es.className = 'empty-state';
+          es.id = 'empty-state';
+          es.innerHTML = '<div class="empty-icon"><span class="material-symbols-outlined" style="font-size:48px;color:var(--success)">verified</span></div><div class="empty-title">All Clear</div><div class="empty-sub">No active alerts. All clients are behaving. 🎉</div>';
+          document.querySelector('.container').appendChild(es);
+        }
+      }
+    }
+
+    // ── Deploy Agent ──
+    function deployAgent() {
+      if (!confirm('Deploy the monitoring agent to ALL clients?\n\nThis will push monitor.ps1 via SFTP and register a scheduled task on each client.')) return;
+      const btn = document.getElementById('deploy-agent-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;color:#fff">hourglass_top</span> Deploying…';
+      fetch('{% url "alerts:deploy_agent" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        credentials: 'same-origin',
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) { pollDeployStatus(); }
+        else {
+          alert(d.error || 'Failed to start deployment');
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;color:#fff">rocket_launch</span> Deploy Agent';
+        }
+      });
+    }
+
+    function pollDeployStatus() {
+      const btn = document.getElementById('deploy-agent-btn');
+      fetch('{% url "alerts:deploy_agent_status" %}', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(d => {
+        btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;color:#fff">rocket_launch</span> ${d.done}/${d.total} done`;
+        if (d.running) {
+          setTimeout(pollDeployStatus, 2000);
+        } else {
+          const success = d.results.filter(r => r.status === 'success').length;
+          const errors = d.results.filter(r => r.status === 'error').length;
+          btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;color:#fff">rocket_launch</span> Deploy Agent`;
+          btn.disabled = false;
+          alert(`Deployment complete!\n\n✅ Success: ${success}\n❌ Failed: ${errors}\n\n${d.results.map(r => `${r.client}: ${r.msg}`).join('\n')}`);
+        }
+      });
+    }
+
+    // ── Auto-insert new alerts from toast polling ──
+    window.addEventListener('rms-new-alerts', function(e) {
+      const newAlerts = e.detail.alerts || [];
+      const list = document.getElementById('alert-list');
+      if (!list) return;
+
+      // Remove empty state if present
+      const es = document.getElementById('empty-state');
+      if (es) es.remove();
+
+      newAlerts.forEach(function(a) {
+        const typeCls = a.alert_type || 'window_title';
+        const icon = typeCls === 'process' ? 'sports_esports' : 'language';
+        const badgeCls = typeCls === 'process' ? 'badge-process' : 'badge-window';
+        const badgeText = typeCls === 'process' ? 'Process' : 'Browser';
+        const nameHtml = document.createElement('span');
+        nameHtml.textContent = a.detected_name;
+        const clientHtml = document.createElement('span');
+        clientHtml.textContent = a.client_name || a.client_ip;
+
+        const div = document.createElement('div');
+        div.className = 'alert-item ' + typeCls;
+        div.dataset.id = a.id;
+        div.style.animation = 'rmsToastIn .35s ease';
+        div.innerHTML = `
+          <input type="checkbox" class="alert-check" data-alert-id="${a.id}" onchange="updateSelectionToolbar()">
+          <div class="alert-icon ${typeCls}"><span class="material-symbols-outlined">${icon}</span></div>
+          <div class="alert-info">
+            <div class="alert-detected">${nameHtml.textContent}</div>
+            <div class="alert-meta">
+              <span><span class="material-symbols-outlined" style="font-size:14px">computer</span> ${clientHtml.textContent}</span>
+              <span><span class="material-symbols-outlined" style="font-size:14px">lan</span> ${a.client_ip}</span>
+              <span><span class="material-symbols-outlined" style="font-size:14px">schedule</span> just now</span>
+            </div>
+          </div>
+          <span class="badge ${badgeCls}">${badgeText}</span>
+          <div class="alert-actions">
+            <button class="dismiss-btn" onclick="dismissAlert(${a.id}, this)"><span class="material-symbols-outlined" style="font-size:14px">check</span> Dismiss</button>
+            <button class="delete-btn" onclick="deleteAlert(${a.id}, this)"><span class="material-symbols-outlined" style="font-size:14px">delete</span></button>
+          </div>
+        `;
+        list.insertBefore(div, list.firstChild);
+      });
+
+      // Update counts from the event
+      updateCounts();
+    });
+  </script>
+  {% include "includes/alert_toasts.html" %}
+</body>
+</html>

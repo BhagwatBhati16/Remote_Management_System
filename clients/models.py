@@ -6,12 +6,23 @@ class Client(models.Model):
     name = models.CharField(max_length=100)
     ip_address = models.GenericIPAddressField(protocol="IPv4")
     os_name = models.CharField(max_length=100, blank=True, default="")
-    # NEW: SSH + Glances + Files config
+    # SSH + Glances + Files config
     ssh_port = models.PositiveIntegerField(default=22)
     ssh_username = models.CharField(max_length=100, blank=True, default="")
     ssh_password = models.CharField(max_length=255, blank=True, default="")  # optional, prefer keys
     ssh_private_key_path = models.CharField(max_length=255, blank=True, default="")  # optional
     glances_port = models.PositiveIntegerField(default=61208)
+    mac_address = models.CharField(max_length=17, blank=True, default="", help_text="e.g. AA:BB:CC:DD:EE:FF — required for Wake on LAN")
+    # Hardware info (auto-detected during registration)
+    cpu = models.CharField(max_length=200, blank=True, default="")
+    ram_gb = models.PositiveIntegerField(null=True, blank=True)
+    disk_gb = models.PositiveIntegerField(null=True, blank=True)
+    os_version = models.CharField(max_length=50, blank=True, default="")
+    vnc_port = models.PositiveIntegerField(default=5900)
+    # Tracking
+    last_seen = models.DateTimeField(null=True, blank=True)
+    auto_registered = models.BooleanField(default=False)
+    admin_viewed = models.BooleanField(default=True)  # False for auto-registered until admin opens detail page
 
     def __str__(self):
         return f"{self.name} ({self.ip_address})"

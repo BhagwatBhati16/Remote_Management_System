@@ -17,6 +17,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "clients",
+    "deploy",
+    "alerts",
 ]
 
 MIDDLEWARE = [
@@ -70,4 +72,10 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 LOGIN_URL = "/admin/login/"
+
+# Auto-registration token — provisioning scripts must send this to register
+RMS_REGISTRATION_TOKEN = os.environ.get("RMS_REGISTRATION_TOKEN", "rms-default-token-change-me")

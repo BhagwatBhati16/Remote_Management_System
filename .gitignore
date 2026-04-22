@@ -1,18 +1,19 @@
-# Python/Django
+# Python / Django
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
 .vscode/
+.idea/
 
 # Virtual environments
 .venv/
 venv/
 
-# Django sqlite db (regenerate via migrations)
+# Django database (regenerate via migrations)
 db.sqlite3
 
-# Logs and temp
+# Logs
 *.log
 logs/
 
@@ -20,10 +21,10 @@ logs/
 Thumbs.db
 .DS_Store
 
-# Node/npm if present
+# Node/npm
 node_modules/
 
-# Local env/config
+# Local environment config
 .env
 .env.local
 .env.*
@@ -31,3 +32,14 @@ node_modules/
 # Build artifacts
 dist/
 build/
+
+# Media uploads (user-uploaded installers)
+media/installers/*.exe
+media/installers/*.msi
+
+# Temp/test files
+*.tmp
+test/
+ss/
+pages/
+glances/venv/

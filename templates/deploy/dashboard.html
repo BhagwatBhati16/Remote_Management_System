@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Software Deployment — RMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined" rel="stylesheet">
+  <style>
+    :root{--bg:#0b0f1a;--surface:#141929;--muted:#252d44;--text:#e2e8f0;--sub:#8892a8;--accent:#6366f1;--accent-hover:#818cf8;--danger:#ef4444;--danger-hover:#f87171;--success:#22c55e;--warning:#f59e0b;--choco:#8b5cf6;--local:#3b82f6}
+    *{box-sizing:border-box;margin:0}
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text)}
+    a{text-decoration:none;color:inherit}
+
+    /* Header */
+    header{background:linear-gradient(135deg,#141929 0%,#1a1040 100%);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--muted);box-shadow:0 2px 4px -2px rgba(0,0,0,.4);height:64px}
+    header h1{font-size:18px;font-weight:700;letter-spacing:.03em;color:#f3f4f6}
+    .header-actions{display:flex;gap:8px;align-items:center}
+    .btn{background:var(--muted);color:var(--text);padding:8px 14px;border-radius:10px;border:0;font-weight:500;cursor:pointer;display:inline-flex;gap:6px;align-items:center;font-size:13px;transition:background .2s,transform .1s;font-family:inherit}
+    .btn:hover{background:#4b5563}
+    .btn:active{transform:scale(.97)}
+    .btn-accent{background:var(--accent);color:#fff}
+    .btn-accent:hover{background:var(--accent-hover)}
+    .btn-danger{background:var(--danger);color:#fff}
+    .btn-danger:hover{background:var(--danger-hover)}
+    .btn-success{background:var(--success);color:#fff}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;font-size:18px;line-height:1}
+
+    /* Layout */
+    .layout{display:flex;flex-direction:column;height:calc(100vh - 60px)}
+    .tabs{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--muted);padding:0 24px}
+    .tab{padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--sub);transition:all .2s;display:flex;gap:6px;align-items:center}
+    .tab:hover{color:var(--text)}
+    .tab.active{color:var(--accent);border-color:var(--accent)}
+    .tab-content{flex:1;overflow:auto;display:none;padding:20px 24px}
+    .tab-content.active{display:block}
+
+    /* Panel Grid */
+    .panels{display:grid;grid-template-columns:1fr 1fr;gap:20px;height:100%}
+    .panel{background:var(--surface);border:1px solid var(--muted);border-radius:14px;display:flex;flex-direction:column;overflow:hidden}
+    .panel-header{padding:14px 16px;border-bottom:1px solid var(--muted);display:flex;justify-content:space-between;align-items:center}
+    .panel-title{font-size:14px;font-weight:700;color:#f3f4f6}
+    .panel-body{flex:1;overflow:auto;padding:8px}
+    .panel-footer{padding:10px 16px;border-top:1px solid var(--muted);display:flex;justify-content:space-between;align-items:center}
+
+    /* Search */
+    .search-input{background:var(--bg);border:1px solid var(--muted);border-radius:8px;padding:7px 12px;color:var(--text);font-size:13px;width:180px;font-family:inherit}
+    .search-input:focus{outline:none;border-color:var(--accent)}
+
+    /* Software list */
+    .sw-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .15s;border:2px solid transparent}
+    .sw-item:hover{background:var(--bg)}
+    .sw-item.selected{border-color:var(--accent);background:rgba(99,102,241,.1)}
+    .sw-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .sw-icon.choco{background:var(--choco)}
+    .sw-icon.local{background:var(--local)}
+    .sw-icon .material-symbols-outlined{color:#fff;font-size:20px}
+    .sw-info{flex:1;min-width:0}
+    .sw-name{font-size:13px;font-weight:600;color:#f3f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sw-meta{font-size:11px;color:var(--sub)}
+    .sw-actions{display:flex;gap:4px}
+    .icon-btn{background:transparent;border:1px solid var(--muted);border-radius:6px;padding:4px 6px;cursor:pointer;color:var(--sub);display:inline-flex;align-items:center;transition:all .15s}
+    .icon-btn:hover{background:var(--muted);color:var(--text)}
+    .icon-btn.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+    .mode-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em}
+    .mode-badge.choco{background:rgba(139,92,246,.2);color:#a78bfa}
+    .mode-badge.local{background:rgba(59,130,246,.2);color:#60a5fa}
+
+    /* Client list */
+    .cl-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;transition:background .15s;border:2px solid transparent}
+    .cl-item:hover{background:var(--bg)}
+    .cl-item.selected{border-color:var(--accent);background:rgba(99,102,241,.1)}
+    .cl-check{width:18px;height:18px;border-radius:4px;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+    .cl-item.selected .cl-check{background:var(--accent);border-color:var(--accent)}
+    .cl-item.selected .cl-check::after{content:'✓';color:#fff;font-size:12px;font-weight:700}
+    .cl-info{flex:1;min-width:0}
+    .cl-name{font-size:13px;font-weight:600;color:#f3f4f6}
+    .cl-ip{font-size:11px;color:var(--sub)}
+    .cl-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .dot-online{background:var(--success)}
+    .dot-offline{background:var(--danger)}
+    .dot-checking{background:var(--warning);animation:pulse-dot 1.2s ease-in-out infinite}
+    .filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .filter-chip{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--muted);cursor:pointer;color:var(--sub);transition:all .15s}
+    .filter-chip:hover,.filter-chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .select-count{font-size:12px;color:var(--sub)}
+
+    /* Deploy bar */
+    .deploy-bar{padding:16px 24px;background:var(--surface);border-top:1px solid var(--muted);display:flex;justify-content:space-between;align-items:center}
+
+    /* ===== DEPLOYMENT PROGRESS PANEL ===== */
+    #progress-panel{display:none;padding:20px 24px}
+    .progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+    .progress-header h2{font-size:18px;font-weight:700;color:#f3f4f6}
+    .progress-header .sub-info{font-size:12px;color:var(--sub)}
+
+    /* Overall progress */
+    .overall-progress{background:var(--surface);border:1px solid var(--muted);border-radius:14px;padding:20px;margin-bottom:20px}
+    .overall-bar-wrap{height:12px;background:var(--muted);border-radius:6px;overflow:hidden;margin:12px 0}
+    .overall-bar{height:100%;border-radius:6px;transition:width .4s ease;background:linear-gradient(90deg,var(--success),#34d399)}
+    .overall-stats{display:flex;gap:24px;flex-wrap:wrap}
+    .overall-stat{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+    .stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+    /* Per-client target cards */
+    .target-card{background:var(--surface);border:1px solid var(--muted);border-radius:12px;margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+    .target-card.status-success{border-color:rgba(34,197,94,.3)}
+    .target-card.status-failed{border-color:rgba(239,68,68,.3)}
+    .target-main{display:flex;align-items:center;gap:14px;padding:14px 16px}
+    .target-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .target-icon.queued{background:var(--muted)}
+    .target-icon.connecting{background:var(--warning)}
+    .target-icon.transferring{background:var(--accent)}
+    .target-icon.installing{background:var(--warning)}
+    .target-icon.verifying{background:var(--accent)}
+    .target-icon.success{background:var(--success)}
+    .target-icon.failed{background:var(--danger)}
+    .target-icon .material-symbols-outlined{color:#fff;font-size:20px}
+    .target-info{flex:1;min-width:0}
+    .target-name{font-size:14px;font-weight:600;color:#f3f4f6}
+    .target-ip{font-size:11px;color:var(--sub)}
+    .target-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em}
+    .badge-queued{background:var(--muted);color:var(--sub)}
+    .badge-connecting{background:rgba(245,158,11,.15);color:var(--warning)}
+    .badge-transferring{background:rgba(99,102,241,.15);color:var(--accent)}
+    .badge-installing{background:rgba(245,158,11,.15);color:var(--warning)}
+    .badge-verifying{background:rgba(99,102,241,.15);color:var(--accent)}
+    .badge-success{background:rgba(34,197,94,.15);color:var(--success)}
+    .badge-failed{background:rgba(239,68,68,.15);color:var(--danger)}
+    .target-bar-wrap{height:4px;background:var(--bg)}
+    .target-bar{height:100%;transition:width .3s ease}
+    .target-bar.queued{background:var(--muted);width:0}
+    .target-bar.connecting{background:var(--warning);width:10%}
+    .target-bar.transferring{background:var(--accent)}
+    .target-bar.installing{background:var(--warning);width:100%;animation:pulse-bar 1.5s ease-in-out infinite}
+    .target-bar.verifying{background:var(--accent);width:100%;animation:pulse-bar 1s ease-in-out infinite}
+    .target-bar.success{background:var(--success);width:100%}
+    .target-bar.failed{background:var(--danger);width:100%}
+    .target-detail{padding:0 16px 14px;display:none}
+    .target-detail.open{display:block}
+    .target-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--danger);margin-top:8px;white-space:pre-wrap;word-break:break-word}
+    .target-stdout{background:var(--bg);border:1px solid var(--muted);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--sub);font-family:'Consolas','Courier New',monospace;margin-top:8px;max-height:150px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+    .toggle-detail{background:none;border:none;color:var(--sub);cursor:pointer;font-size:11px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px}
+    .toggle-detail:hover{color:var(--text)}
+
+    /* Completion banner */
+    .completion-banner{background:var(--surface);border:1px solid var(--muted);border-radius:14px;padding:24px;margin-top:20px;text-align:center}
+    .completion-banner h3{font-size:16px;font-weight:700;margin-bottom:8px}
+    .completion-banner p{font-size:13px;color:var(--sub);margin-bottom:16px}
+
+    /* History */
+    .hist-item{display:flex;align-items:center;gap:16px;padding:12px 14px;border-radius:10px;background:var(--bg);margin-bottom:8px;cursor:pointer;transition:background .15s}
+    .hist-item:hover{background:var(--muted)}
+    .hist-status{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .hist-info{flex:1}
+    .hist-name{font-size:13px;font-weight:600;color:#f3f4f6}
+    .hist-meta{font-size:11px;color:var(--sub)}
+    .hist-counts{text-align:right}
+    .hist-counts span{font-size:12px;margin-left:8px}
+
+    /* Modal */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:none;align-items:center;justify-content:center}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--surface);border:1px solid var(--muted);border-radius:14px;padding:24px;min-width:480px;max-width:90vw;max-height:85vh;overflow:auto;box-shadow:0 20px 60px -10px rgba(0,0,0,.5)}
+    .modal h3{margin:0 0 16px;font-size:16px;color:#f3f4f6}
+    .modal-input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--muted);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;margin-bottom:12px}
+    .modal-input:focus{outline:none;border-color:var(--accent)}
+    textarea.modal-input{min-height:80px;resize:vertical}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+    .field-label{font-size:12px;color:var(--sub);margin-bottom:4px}
+    .field-hint{font-size:10px;color:var(--sub);margin-top:-8px;margin-bottom:10px}
+
+    /* Mode toggle */
+    .mode-toggle{display:flex;gap:0;margin-bottom:16px;border:1px solid var(--muted);border-radius:10px;overflow:hidden}
+    .mode-opt{flex:1;padding:10px 16px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;color:var(--sub);transition:all .2s;background:var(--bg)}
+    .mode-opt:hover{color:var(--text)}
+    .mode-opt.active{color:#fff}
+    .mode-opt.choco.active{background:var(--choco)}
+    .mode-opt.local.active{background:var(--local)}
+    .mode-fields{display:none}
+    .mode-fields.active{display:block}
+
+    /* Empty state */
+    .empty-state{text-align:center;padding:40px 16px;color:var(--sub);font-size:13px}
+
+    @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+    @keyframes pulse-bar{0%,100%{opacity:1}50%{opacity:.6}}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+    @media(max-width:900px){.panels{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#a855f7);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(99,102,241,.3)">
+      <span class="material-symbols-outlined" style="color:#fff;font-size:18px">hub</span>
+    </div>
+    <h1>SOFTWARE DEPLOYMENT</h1>
+  </div>
+  <div class="header-actions">
+    <a href="{% url 'clients:overview' %}" class="btn">
+      <span class="material-symbols-outlined">arrow_back</span> All Clients
+    </a>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="tabs">
+    <div class="tab active" data-tab="deploy" id="tab-deploy">
+      <span class="material-symbols-outlined" style="font-size:16px">rocket_launch</span> Deploy
+    </div>
+    <div class="tab" data-tab="history" id="tab-history">
+      <span class="material-symbols-outlined" style="font-size:16px">history</span> History
+    </div>
+  </div>
+
+  <!-- Deploy Tab -->
+  <div class="tab-content active" id="pane-deploy">
+
+    <!-- SELECTOR VIEW: Software Library + Client Selector -->
+    <div id="selector-view">
+      <div class="panels" style="height:calc(100vh - 220px)">
+        <!-- Software Library Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">📦 Software Library</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" class="search-input" placeholder="Search software…" id="sw-search">
+              <button class="btn btn-accent" id="sw-add-btn" style="font-size:12px;padding:6px 10px">
+                <span class="material-symbols-outlined" style="font-size:14px">add</span> Add
+              </button>
+            </div>
+          </div>
+          <div class="panel-body" id="sw-list">
+            <div class="empty-state">Loading software library…</div>
+          </div>
+          <div class="panel-footer">
+            <span class="select-count" id="sw-selected-count">No software selected</span>
+          </div>
+        </div>
+
+        <!-- Clients Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">🖥️ Target Clients</span>
+            <input type="text" class="search-input" placeholder="Search clients…" id="cl-search">
+          </div>
+          <div style="padding:8px 16px;border-bottom:1px solid var(--muted)">
+            <div class="filter-bar">
+              <div class="filter-chip active" data-filter="all">All</div>
+              <div class="filter-chip" data-filter="online">Online Only</div>
+              <div class="filter-chip" data-filter="offline">Offline Only</div>
+              <span style="flex:1"></span>
+              <button class="btn" id="cl-select-all" style="font-size:11px;padding:4px 10px">Select All</button>
+              <button class="btn" id="cl-select-online" style="font-size:11px;padding:4px 10px">Select Online</button>
+              <button class="btn" id="cl-deselect-all" style="font-size:11px;padding:4px 10px">Deselect All</button>
+            </div>
+          </div>
+          <div class="panel-body" id="cl-list">
+            <div class="empty-state">Loading clients…</div>
+          </div>
+          <div class="panel-footer">
+            <span class="select-count" id="cl-selected-count">No clients selected</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deploy Bar -->
+      <div class="deploy-bar">
+        <div id="deploy-summary" style="font-size:13px;color:var(--sub)">Select software and clients to deploy</div>
+        <button class="btn btn-accent" id="deploy-btn" disabled style="font-size:14px;padding:10px 24px">
+          <span class="material-symbols-outlined" style="font-size:18px;color:#fff">rocket_launch</span> Deploy Now
+        </button>
+      </div>
+    </div>
+
+    <!-- PROGRESS VIEW: Live deployment tracking (hidden by default) -->
+    <div id="progress-panel">
+      <div class="progress-header">
+        <div>
+          <h2 id="progress-title">Deploying…</h2>
+          <div class="sub-info" id="progress-subtitle"></div>
+        </div>
+        <div id="progress-actions"></div>
+      </div>
+
+      <!-- Overall progress -->
+      <div class="overall-progress">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;font-weight:600;color:#f3f4f6" id="overall-label">0 of 0 clients completed</span>
+          <span style="font-size:13px;font-weight:700;color:var(--accent)" id="overall-pct">0%</span>
+        </div>
+        <div class="overall-bar-wrap">
+          <div class="overall-bar" id="overall-bar" style="width:0"></div>
+        </div>
+        <div class="overall-stats" id="overall-stats"></div>
+      </div>
+
+      <!-- Per-client target cards -->
+      <div id="target-cards"></div>
+
+      <!-- Completion banner -->
+      <div id="completion-banner" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- History Tab -->
+  <div class="tab-content" id="pane-history">
+    <div id="history-list">
+      <div class="empty-state">Loading deployment history…</div>
+    </div>
+    <div id="history-detail" style="display:none">
+      <button class="btn" id="hist-back" style="margin-bottom:16px">
+        <span class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Back
+      </button>
+      <div id="hist-detail-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add/Edit Software -->
+<div class="modal-overlay" id="modal-sw">
+  <div class="modal">
+    <h3 id="modal-sw-title">Add Software</h3>
+    <form id="sw-form" enctype="multipart/form-data">
+      <!-- Mode Toggle -->
+      <div class="field-label">Deployment Mode</div>
+      <div class="mode-toggle" id="mode-toggle">
+        <div class="mode-opt choco active" data-mode="choco">🍫 Chocolatey <span style="font-size:10px;opacity:.7">(recommended)</span></div>
+        <div class="mode-opt local" data-mode="local">📦 Local Installer</div>
+      </div>
+      <input type="hidden" name="deployment_mode" id="sw-f-mode" value="choco">
+
+      <div class="field-label">Name *</div>
+      <input type="text" class="modal-input" name="name" id="sw-f-name" placeholder="e.g. WinRAR, Google Chrome" required>
+
+      <div class="field-label">Version</div>
+      <input type="text" class="modal-input" name="version" id="sw-f-version" placeholder="e.g. 7.20 (optional)">
+
+      <div class="field-label">Description</div>
+      <textarea class="modal-input" name="description" id="sw-f-description" placeholder="Optional notes…" style="min-height:50px"></textarea>
+
+      <!-- Chocolatey fields -->
+      <div class="mode-fields active" id="fields-choco">
+        <div class="field-label">Chocolatey Package Name *</div>
+        <input type="text" class="modal-input" name="choco_package_name" id="sw-f-choco" placeholder="e.g. winrar, googlechrome, 7zip">
+        <div class="field-hint">Find packages at <a href="https://community.chocolatey.org/packages" target="_blank" style="color:var(--accent)">community.chocolatey.org/packages</a></div>
+      </div>
+
+      <!-- Local installer fields -->
+      <div class="mode-fields" id="fields-local">
+        <div class="field-label">Installer File *</div>
+        <input type="file" class="modal-input" name="installer_file" id="sw-f-file" accept=".exe,.msi,.cmd,.bat,.ps1">
+        <div class="field-label">Silent Install Arguments</div>
+        <input type="text" class="modal-input" name="silent_args" id="sw-f-args" placeholder="Auto-detected from filename">
+        <div class="field-hint" id="args-hint">
+          Common: <b>NSIS/WinRAR</b> → /S &nbsp;|&nbsp; <b>Inno Setup</b> → /VERYSILENT /SUPPRESSMSGBOXES /NORESTART &nbsp;|&nbsp; <b>MSI</b> → /quiet /norestart
+        </div>
+      </div>
+
+      <input type="hidden" id="sw-f-id" value="">
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="closeModal('modal-sw')">Cancel</button>
+        <button type="submit" class="btn btn-accent" id="sw-f-submit">Add Software</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // ---- Constants ----
+  const POLL_INTERVAL = 2000;
+  // Active deployment ID injected from Django (for resume on page refresh)
+  const RESUME_DEPLOYMENT_ID = {{ active_deployment_id|default:"0" }};
+
+  // ---- Utility ----
+  function getCookie(name) {
+    const v = `; ${document.cookie}`;
+    const p = v.split(`; ${name}=`);
+    if (p.length === 2) return p.pop().split(';').shift();
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  function postJSON(url, body) {
+    return fetch(url, {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrftoken, 'Content-Type': 'application/json'},
+      credentials: 'same-origin',
+      body: JSON.stringify(body)
+    }).then(r => {
+      if (!r.ok) return r.text().then(txt => { throw new Error(`HTTP ${r.status}: ${txt.substring(0,200)}`); });
+      return r.json();
+    });
+  }
+  function getJSON(url) {
+    return fetch(url, {credentials: 'same-origin'}).then(r => {
+      if (!r.ok) return r.text().then(txt => { throw new Error(`HTTP ${r.status}`); });
+      return r.json();
+    });
+  }
+  function postForm(url, formData) {
+    return fetch(url, {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrftoken},
+      credentials: 'same-origin',
+      body: formData
+    }).then(r => r.json());
+  }
+
+  function humanSize(bytes) {
+    if (!bytes) return '0 B';
+    const u = ['B','KB','MB','GB'];
+    let i = 0;
+    while (bytes >= 1024 && i < u.length - 1) { bytes /= 1024; i++; }
+    return bytes.toFixed(i ? 1 : 0) + ' ' + u[i];
+  }
+
+  function escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ---- Tab Navigation ----
+  const tabs = document.querySelectorAll('.tab');
+  const panes = document.querySelectorAll('.tab-content');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    panes.forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('pane-' + t.dataset.tab).classList.add('active');
+    if (t.dataset.tab === 'history') loadHistory();
+  }));
+
+  // ---- Modal ----
+  window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
+  window.openModal = function(id) { document.getElementById(id).classList.add('open'); };
+
+  // ---- Mode Toggle ----
+  let currentMode = 'choco';
+  function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('sw-f-mode').value = mode;
+    document.querySelectorAll('.mode-opt').forEach(o => o.classList.toggle('active', o.dataset.mode === mode));
+    document.getElementById('fields-choco').classList.toggle('active', mode === 'choco');
+    document.getElementById('fields-local').classList.toggle('active', mode === 'local');
+  }
+  document.querySelectorAll('.mode-opt').forEach(opt => {
+    opt.addEventListener('click', () => setMode(opt.dataset.mode));
+  });
+
+  // ---- Silent Args Auto-Detection ----
+  document.getElementById('sw-f-file').addEventListener('change', function() {
+    if (!this.files.length) return;
+    const fname = this.files[0].name;
+    const argsField = document.getElementById('sw-f-args');
+    if (argsField.value.trim()) return;
+    if (/\.msi$/i.test(fname)) { argsField.value = '/quiet /norestart'; return; }
+    if (/winrar|nsis|7z/i.test(fname)) { argsField.value = '/S'; return; }
+    if (/inno|setup/i.test(fname)) { argsField.value = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART'; return; }
+    argsField.value = '/S';
+  });
+
+  // ---- Software Library ----
+  let softwareItems = [];
+  let selectedSoftwareId = null;
+
+  function loadSoftware() {
+    const q = document.getElementById('sw-search').value;
+    getJSON('/deploy/library/?q=' + encodeURIComponent(q)).then(d => {
+      softwareItems = d.items || [];
+      renderSoftware();
+    }).catch(() => {});
+  }
+
+  function renderSoftware() {
+    const el = document.getElementById('sw-list');
+    if (!softwareItems.length) {
+      el.innerHTML = '<div class="empty-state">No software in library. Click Add to upload an installer.</div>';
+      return;
+    }
+    el.innerHTML = softwareItems.map(s => {
+      const isChoco = s.deployment_mode === 'choco';
+      const meta = isChoco
+        ? `choco: ${escapeHtml(s.choco_package_name)}`
+        : `${escapeHtml(s.filename)} · ${humanSize(s.file_size)}${s.silent_args ? ' · Args: ' + escapeHtml(s.silent_args) : ''}`;
+      return `
+        <div class="sw-item ${selectedSoftwareId === s.id ? 'selected' : ''}" data-id="${s.id}">
+          <div class="sw-icon ${s.deployment_mode}"><span class="material-symbols-outlined">${isChoco ? 'package_2' : 'deployed_code'}</span></div>
+          <div class="sw-info">
+            <div class="sw-name">${escapeHtml(s.name)}${s.version ? ' v' + escapeHtml(s.version) : ''} <span class="mode-badge ${s.deployment_mode}">${isChoco ? 'Choco' : 'Local'}</span></div>
+            <div class="sw-meta">${meta}</div>
+          </div>
+          <div class="sw-actions">
+            <button class="icon-btn sw-edit-btn" data-id="${s.id}" title="Edit"><span class="material-symbols-outlined" style="font-size:16px">edit</span></button>
+            <button class="icon-btn danger sw-del-btn" data-id="${s.id}" title="Delete"><span class="material-symbols-outlined" style="font-size:16px">delete</span></button>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Click to select
+    el.querySelectorAll('.sw-item').forEach(item => {
+      item.addEventListener('click', e => {
+        if (e.target.closest('.sw-actions')) return;
+        const id = parseInt(item.dataset.id);
+        selectedSoftwareId = (selectedSoftwareId === id) ? null : id;
+        renderSoftware();
+        updateDeployState();
+      });
+    });
+
+    // Edit
+    el.querySelectorAll('.sw-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sw = softwareItems.find(s => s.id === parseInt(btn.dataset.id));
+        if (!sw) return;
+        document.getElementById('modal-sw-title').textContent = 'Edit Software';
+        document.getElementById('sw-f-name').value = sw.name;
+        document.getElementById('sw-f-version').value = sw.version;
+        document.getElementById('sw-f-description').value = sw.description;
+        document.getElementById('sw-f-id').value = sw.id;
+        setMode(sw.deployment_mode);
+        if (sw.deployment_mode === 'choco') {
+          document.getElementById('sw-f-choco').value = sw.choco_package_name;
+        } else {
+          document.getElementById('sw-f-args').value = sw.silent_args;
+          document.getElementById('sw-f-file').required = false;
+        }
+        document.getElementById('sw-f-submit').textContent = 'Save Changes';
+        openModal('modal-sw');
+      });
+    });
+
+    // Delete
+    el.querySelectorAll('.sw-del-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('Delete this software?')) return;
+        postForm('/deploy/library/' + btn.dataset.id + '/delete/', new FormData())
+          .then(() => { if (selectedSoftwareId === parseInt(btn.dataset.id)) selectedSoftwareId = null; loadSoftware(); });
+      });
+    });
+
+    const cnt = document.getElementById('sw-selected-count');
+    cnt.textContent = selectedSoftwareId
+      ? `Selected: ${(softwareItems.find(s => s.id === selectedSoftwareId) || {}).name || '?'}`
+      : 'No software selected';
+  }
+
+  document.getElementById('sw-search').addEventListener('input', loadSoftware);
+
+  // Add software button
+  document.getElementById('sw-add-btn').addEventListener('click', () => {
+    document.getElementById('modal-sw-title').textContent = 'Add Software';
+    document.getElementById('sw-form').reset();
+    document.getElementById('sw-f-id').value = '';
+    document.getElementById('sw-f-choco').value = '';
+    document.getElementById('sw-f-args').value = '';
+    document.getElementById('sw-f-file').required = false;
+    setMode('choco');
+    document.getElementById('sw-f-submit').textContent = 'Add Software';
+    openModal('modal-sw');
+  });
+
+  // Form submit
+  document.getElementById('sw-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    fd.set('deployment_mode', currentMode);
+    const editId = document.getElementById('sw-f-id').value;
+    const url = editId ? '/deploy/library/' + editId + '/edit/' : '/deploy/library/add/';
+    postForm(url, fd).then(d => {
+      if (d.ok) { closeModal('modal-sw'); loadSoftware(); }
+      else alert(d.error || 'Failed');
+    }).catch(err => alert('Error: ' + err));
+  });
+
+  // ---- Clients ----
+  let clientItems = [];
+  let clientStatuses = {};
+  let selectedClientIds = new Set();
+  let clientFilter = 'all';
+
+  const allClients = [
+    {% for c in clients %}
+    {id: {{ c.id }}, name: "{{ c.name|escapejs }}", ip: "{{ c.ip_address }}", os: "{{ c.os_name|default:'Windows'|escapejs }}"},
+    {% endfor %}
+  ];
+  clientItems = allClients;
+
+  // Render clients IMMEDIATELY — then async ping each one
+  function loadClientStatuses() {
+    // First render right away with "checking" status
+    renderClients();
+
+    // Then fire individual async pings — each updates its dot as soon as it resolves
+    allClients.forEach(c => {
+      fetch('/clients/' + c.id + '/glances/health/', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(d => {
+          clientStatuses[c.id] = d.reachable === true;
+          renderClients();
+        })
+        .catch(() => {
+          clientStatuses[c.id] = false;
+          renderClients();
+        });
+    });
+  }
+
+  function renderClients() {
+    const el = document.getElementById('cl-list');
+    const q = (document.getElementById('cl-search').value || '').toLowerCase();
+    let items = clientItems.filter(c => {
+      if (q && !c.name.toLowerCase().includes(q) && !c.ip.includes(q)) return false;
+      if (clientFilter === 'online' && !clientStatuses[c.id]) return false;
+      if (clientFilter === 'offline' && clientStatuses[c.id]) return false;
+      return true;
+    });
+
+    if (!items.length) {
+      el.innerHTML = '<div class="empty-state">No matching clients</div>';
+      return;
+    }
+
+    el.innerHTML = items.map(c => {
+      const online = clientStatuses[c.id];
+      const sel = selectedClientIds.has(c.id);
+      const dotClass = online === undefined ? 'dot-checking' : (online ? 'dot-online' : 'dot-offline');
+      return `
+        <div class="cl-item ${sel ? 'selected' : ''}" data-id="${c.id}">
+          <div class="cl-check"></div>
+          <div class="cl-status-dot ${dotClass}"></div>
+          <div class="cl-info">
+            <div class="cl-name">${escapeHtml(c.name)}</div>
+            <div class="cl-ip">${c.ip} · ${escapeHtml(c.os)}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    el.querySelectorAll('.cl-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const id = parseInt(item.dataset.id);
+        if (selectedClientIds.has(id)) selectedClientIds.delete(id);
+        else selectedClientIds.add(id);
+        renderClients();
+        updateDeployState();
+      });
+    });
+
+    document.getElementById('cl-selected-count').textContent =
+      selectedClientIds.size ? `${selectedClientIds.size} client(s) selected` : 'No clients selected';
+  }
+
+  document.getElementById('cl-search').addEventListener('input', renderClients);
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      clientFilter = chip.dataset.filter;
+      renderClients();
+    });
+  });
+  document.getElementById('cl-select-all').addEventListener('click', () => {
+    clientItems.forEach(c => selectedClientIds.add(c.id));
+    renderClients(); updateDeployState();
+  });
+  document.getElementById('cl-select-online').addEventListener('click', () => {
+    clientItems.forEach(c => { if (clientStatuses[c.id]) selectedClientIds.add(c.id); });
+    renderClients(); updateDeployState();
+  });
+  document.getElementById('cl-deselect-all').addEventListener('click', () => {
+    selectedClientIds.clear();
+    renderClients(); updateDeployState();
+  });
+
+  // ---- Deploy State ----
+  function updateDeployState() {
+    const btn = document.getElementById('deploy-btn');
+    const summary = document.getElementById('deploy-summary');
+    const swOk = selectedSoftwareId !== null;
+    const clOk = selectedClientIds.size > 0;
+    btn.disabled = !(swOk && clOk);
+    if (swOk && clOk) {
+      const sw = softwareItems.find(s => s.id === selectedSoftwareId);
+      summary.textContent = `Deploy "${sw ? sw.name : '?'}" to ${selectedClientIds.size} client(s)`;
+      summary.style.color = 'var(--text)';
+    } else {
+      summary.textContent = 'Select software and clients to deploy';
+      summary.style.color = 'var(--sub)';
+    }
+  }
+
+  // ===========================================================================
+  // DEPLOYMENT - TRIGGER, PROGRESS, POLLING
+  // ===========================================================================
+  let activeDeploymentId = null;
+  let pollTimer = null;
+
+  // ---- Deploy Now Button ----
+  document.getElementById('deploy-btn').addEventListener('click', () => {
+    if (!selectedSoftwareId || !selectedClientIds.size) return;
+
+    const sw = softwareItems.find(s => s.id === selectedSoftwareId);
+    const swName = sw ? sw.name : 'Software';
+    const clientCount = selectedClientIds.size;
+
+    if (!confirm(`Deploy "${swName}" to ${clientCount} client(s)?`)) return;
+
+    // Immediately show loading state on button
+    const btn = document.getElementById('deploy-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Starting deployment…';
+
+    console.log('[Deploy] Sending POST /deploy/start/', {
+      software_id: selectedSoftwareId,
+      client_ids: Array.from(selectedClientIds)
+    });
+
+    postJSON('/deploy/start/', {
+      software_id: selectedSoftwareId,
+      client_ids: Array.from(selectedClientIds)
+    }).then(d => {
+      console.log('[Deploy] Response:', d);
+      if (d.ok && d.deployment_id) {
+        activeDeploymentId = d.deployment_id;
+        switchToProgressView();
+        startPolling();
+      } else {
+        alert(d.error || 'Deployment failed to start');
+        resetDeployBtn();
+      }
+    }).catch(err => {
+      console.error('[Deploy] Error:', err);
+      alert('Deployment request failed: ' + err.message);
+      resetDeployBtn();
+    });
+  });
+
+  function resetDeployBtn() {
+    const btn = document.getElementById('deploy-btn');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;color:#fff">rocket_launch</span> Deploy Now';
+  }
+
+  // ---- View Switching ----
+  function switchToProgressView() {
+    document.getElementById('selector-view').style.display = 'none';
+    document.getElementById('progress-panel').style.display = 'block';
+    document.getElementById('completion-banner').style.display = 'none';
+    document.getElementById('progress-actions').innerHTML = '';
+  }
+
+  function switchToSelectorView() {
+    document.getElementById('progress-panel').style.display = 'none';
+    document.getElementById('selector-view').style.display = 'block';
+    activeDeploymentId = null;
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    resetDeployBtn();
+    selectedSoftwareId = null;
+    selectedClientIds.clear();
+    renderSoftware();
+    renderClients();
+    updateDeployState();
+  }
+
+  // ---- Polling ----
+  function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(pollStatus, POLL_INTERVAL);
+    pollStatus(); // Immediate first poll
+  }
+
+  function pollStatus() {
+    if (!activeDeploymentId) return;
+    getJSON('/deploy/status/' + activeDeploymentId + '/').then(d => {
+      if (!d.ok) return;
+      renderProgressPanel(d);
+
+      // Check if deployment is done
+      if (d.status === 'completed' || d.status === 'failed') {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        showCompletionBanner(d);
+      }
+    }).catch(err => {
+      console.error('[Poll] Error:', err);
+    });
+  }
+
+  // ---- Render Progress Panel ----
+  function renderProgressPanel(data) {
+    const swName = data.software_name || 'Software';
+    const mode = data.deployment_mode || 'unknown';
+    const total = data.total_targets || 0;
+    const completed = data.completed || 0;
+    const failed = data.failed || 0;
+    const inProgress = data.in_progress || 0;
+    const queued = total - completed - failed - inProgress;
+    const done = completed + failed;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    // Header
+    document.getElementById('progress-title').textContent = `Deploying ${swName} to ${total} client${total !== 1 ? 's' : ''}`;
+    document.getElementById('progress-subtitle').textContent =
+      `Mode: ${mode} · Started: ${data.started_at || '?'} · By: ${data.triggered_by || '?'}`;
+
+    // Overall bar
+    document.getElementById('overall-label').textContent = `${done} of ${total} clients completed`;
+    document.getElementById('overall-pct').textContent = `${pct}%`;
+    document.getElementById('overall-bar').style.width = `${pct}%`;
+    if (failed > 0 && completed === 0) {
+      document.getElementById('overall-bar').style.background = 'var(--danger)';
+    } else if (failed > 0) {
+      document.getElementById('overall-bar').style.background = 'linear-gradient(90deg,var(--success),var(--warning))';
+    } else {
+      document.getElementById('overall-bar').style.background = 'linear-gradient(90deg,var(--success),#34d399)';
+    }
+
+    // Overall stats
+    document.getElementById('overall-stats').innerHTML = `
+      <div class="overall-stat"><div class="stat-dot" style="background:var(--success)"></div>${completed} succeeded</div>
+      <div class="overall-stat"><div class="stat-dot" style="background:var(--danger)"></div>${failed} failed</div>
+      <div class="overall-stat"><div class="stat-dot" style="background:var(--warning)"></div>${inProgress} in progress</div>
+      <div class="overall-stat"><div class="stat-dot" style="background:var(--muted)"></div>${queued < 0 ? 0 : queued} queued</div>
+    `;
+
+    // Per-client target cards
+    const targets = data.targets || [];
+    const cardsEl = document.getElementById('target-cards');
+    cardsEl.innerHTML = targets.map((t, i) => {
+      const status = t.status || 'queued';
+      const progress = t.progress || 0;
+      const icon = getStatusIcon(status);
+      let barStyle = '';
+      if (status === 'transferring') barStyle = `width:${progress}%`;
+      const exitInfo = t.exit_code !== null && t.exit_code !== undefined ? ` · Exit: ${t.exit_code}` : '';
+
+      return `
+        <div class="target-card status-${status}" id="target-${i}">
+          <div class="target-main">
+            <div class="target-icon ${status}">
+              <span class="material-symbols-outlined">${icon}</span>
+            </div>
+            <div class="target-info">
+              <div class="target-name">${escapeHtml(t.client_name)}</div>
+              <div class="target-ip">${escapeHtml(t.client_ip)}${exitInfo}</div>
+            </div>
+            <span class="target-badge badge-${status}">${formatStatus(status)}${status === 'transferring' ? ' ' + progress + '%' : ''}</span>
+            ${(t.error || t.stdout || t.stderr) ? `<button class="toggle-detail" onclick="toggleDetail(${i})"><span class="material-symbols-outlined" style="font-size:14px">expand_more</span>Details</button>` : ''}
+          </div>
+          <div class="target-bar-wrap">
+            <div class="target-bar ${status}" style="${barStyle}"></div>
+          </div>
+          ${(t.error || t.stdout || t.stderr) ? `
+            <div class="target-detail" id="detail-${i}">
+              ${t.error ? `<div class="target-error">⚠ ${escapeHtml(t.error)}</div>` : ''}
+              ${t.stdout ? `<div class="target-stdout"><strong>stdout:</strong>\n${escapeHtml(t.stdout)}</div>` : ''}
+              ${t.stderr ? `<div class="target-stdout" style="border-color:rgba(239,68,68,.2)"><strong>stderr:</strong>\n${escapeHtml(t.stderr)}</div>` : ''}
+            </div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  // Toggle detail section
+  window.toggleDetail = function(idx) {
+    const el = document.getElementById('detail-' + idx);
+    if (el) el.classList.toggle('open');
+  };
+
+  function getStatusIcon(status) {
+    return {
+      queued: 'schedule',
+      connecting: 'wifi',
+      transferring: 'cloud_upload',
+      installing: 'downloading',
+      verifying: 'verified',
+      success: 'check_circle',
+      failed: 'error',
+    }[status] || 'help';
+  }
+
+  function formatStatus(status) {
+    return {
+      queued: 'Queued',
+      connecting: 'Connecting',
+      transferring: 'Transferring',
+      installing: 'Installing',
+      verifying: 'Verifying',
+      success: 'Success',
+      failed: 'Failed',
+    }[status] || status.toUpperCase();
+  }
+
+  // ---- Completion Banner ----
+  function showCompletionBanner(data) {
+    const completed = data.completed || 0;
+    const failed = data.failed || 0;
+    const total = data.total_targets || 0;
+    const allOk = failed === 0;
+
+    const banner = document.getElementById('completion-banner');
+    banner.style.display = 'block';
+    banner.innerHTML = `
+      <div class="completion-banner">
+        <h3 style="color:${allOk ? 'var(--success)' : 'var(--warning)'}">
+          ${allOk ? '✅ Deployment Complete' : '⚠️ Deployment Finished with Errors'}
+        </h3>
+        <p>${completed} of ${total} succeeded${failed > 0 ? `, ${failed} failed` : ''}</p>
+        <button class="btn btn-accent" onclick="window._switchToSelectorView()" style="margin-right:8px">
+          <span class="material-symbols-outlined" style="font-size:16px">replay</span> Deploy Again
+        </button>
+        <button class="btn" onclick="document.getElementById('tab-history').click()">
+          <span class="material-symbols-outlined" style="font-size:16px">history</span> View History
+        </button>
+      </div>
+    `;
+
+    // Also show "deploy again" in the header
+    document.getElementById('progress-actions').innerHTML = `
+      <button class="btn btn-accent" onclick="window._switchToSelectorView()">
+        <span class="material-symbols-outlined" style="font-size:16px">replay</span> New Deployment
+      </button>
+    `;
+  }
+
+  // Expose for onclick
+  window._switchToSelectorView = switchToSelectorView;
+
+  // ---- History ----
+  function loadHistory() {
+    getJSON('/deploy/history/').then(d => {
+      const items = d.items || [];
+      const el = document.getElementById('history-list');
+      if (!items.length) {
+        el.innerHTML = '<div class="empty-state">No deployments yet</div>';
+        return;
+      }
+      el.innerHTML = items.map(h => {
+        const col = {pending:'var(--sub)',running:'var(--accent)',completed:'var(--success)',failed:'var(--danger)'}[h.status];
+        return `
+          <div class="hist-item" data-id="${h.id}">
+            <div class="hist-status" style="background:${col}"></div>
+            <div class="hist-info">
+              <div class="hist-name">${escapeHtml(h.software_name)} <span class="mode-badge ${h.deployment_mode === 'chocolatey' ? 'choco' : 'local'}">${h.deployment_mode}</span></div>
+              <div class="hist-meta">${h.triggered_at} by ${escapeHtml(h.triggered_by)}</div>
+            </div>
+            <div class="hist-counts">
+              <span style="color:var(--success)">✓ ${h.completed}</span>
+              <span style="color:var(--danger)">✗ ${h.failed}</span>
+              <span style="color:var(--sub)">/ ${h.total}</span>
+            </div>
+          </div>`;
+      }).join('');
+
+      el.querySelectorAll('.hist-item').forEach(item => {
+        item.addEventListener('click', () => showHistoryDetail(parseInt(item.dataset.id)));
+      });
+
+      document.getElementById('history-detail').style.display = 'none';
+      el.style.display = 'block';
+    }).catch(() => {});
+  }
+
+  function showHistoryDetail(depId) {
+    document.getElementById('history-list').style.display = 'none';
+    document.getElementById('history-detail').style.display = 'block';
+    getJSON('/deploy/status/' + depId + '/').then(d => {
+      if (!d.ok) return;
+      const swName = d.software_name || 'Software';
+      const mode = d.deployment_mode || '';
+      const total = d.total_targets || 0;
+      const completed = d.completed || 0;
+      const failed = d.failed || 0;
+      const targets = d.targets || [];
+
+      let html = `
+        <div style="margin-bottom:16px">
+          <h2 style="font-size:18px;font-weight:700;color:#f3f4f6;margin-bottom:4px">${escapeHtml(swName)}</h2>
+          <div style="font-size:12px;color:var(--sub)">Mode: ${mode} · ${d.started_at} · By: ${escapeHtml(d.triggered_by || '?')}</div>
+          <div style="margin-top:8px;font-size:13px"><span style="color:var(--success)">${completed} succeeded</span> · <span style="color:var(--danger)">${failed} failed</span> · ${total} total</div>
+        </div>
+      `;
+
+      html += targets.map((t, i) => {
+        const icon = getStatusIcon(t.status);
+        const exitInfo = t.exit_code !== null && t.exit_code !== undefined ? ` · Exit: ${t.exit_code}` : '';
+        return `
+          <div class="target-card status-${t.status}">
+            <div class="target-main">
+              <div class="target-icon ${t.status}"><span class="material-symbols-outlined">${icon}</span></div>
+              <div class="target-info">
+                <div class="target-name">${escapeHtml(t.client_name)}</div>
+                <div class="target-ip">${escapeHtml(t.client_ip)}${exitInfo}</div>
+              </div>
+              <span class="target-badge badge-${t.status}">${formatStatus(t.status)}</span>
+              ${(t.error || t.stdout || t.stderr) ? `<button class="toggle-detail" onclick="toggleDetail(${1000+i})"><span class="material-symbols-outlined" style="font-size:14px">expand_more</span>Details</button>` : ''}
+            </div>
+            <div class="target-bar-wrap"><div class="target-bar ${t.status}" style="${t.status === 'transferring' ? 'width:'+t.progress+'%' : ''}"></div></div>
+            ${(t.error || t.stdout || t.stderr) ? `
+              <div class="target-detail" id="detail-${1000+i}">
+                ${t.error ? `<div class="target-error">⚠ ${escapeHtml(t.error)}</div>` : ''}
+                ${t.stdout ? `<div class="target-stdout"><strong>stdout:</strong>\n${escapeHtml(t.stdout)}</div>` : ''}
+                ${t.stderr ? `<div class="target-stdout" style="border-color:rgba(239,68,68,.2)"><strong>stderr:</strong>\n${escapeHtml(t.stderr)}</div>` : ''}
+              </div>` : ''}
+          </div>`;
+      }).join('');
+
+      document.getElementById('hist-detail-content').innerHTML = html;
+    }).catch(() => {});
+  }
+
+  document.getElementById('hist-back').addEventListener('click', () => {
+    document.getElementById('history-detail').style.display = 'none';
+    document.getElementById('history-list').style.display = 'block';
+  });
+
+  // ---- Init ----
+  loadSoftware();
+  loadClientStatuses();
+  updateDeployState();
+
+  // ---- AUTO-RESUME: if there's an active deployment, show progress immediately ----
+  if (RESUME_DEPLOYMENT_ID > 0) {
+    console.log('[Deploy] Resuming active deployment #' + RESUME_DEPLOYMENT_ID);
+    activeDeploymentId = RESUME_DEPLOYMENT_ID;
+    switchToProgressView();
+    startPolling();
+  }
+});
+</script>
+{% include "includes/alert_toasts.html" %}
+</body>
+</html>

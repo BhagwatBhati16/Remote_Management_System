@@ -1,190 +1,1709 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Client Page</title><style>@import url(https://fonts.googleapis.com/css2?family=Lato&display=swap);
-@import url(https://fonts.googleapis.com/css2?family=Open+Sans&display=swap);
-@import url(https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined);
-/* Tailwind base reset (truncated for brevity, original design preserved) */
-html,body{margin:0;padding:0;font-family:Open Sans,ui-sans-serif,system-ui,sans-serif;background:#111827;color:#D1D5DB;}
-/* Utility classes used by original markup retained below (truncated) */
-/* Remove iframe borders/outlines globally and ensure no default inline spacing */
-iframe{border:0!important;outline:none!important;box-shadow:none!important;display:block!important;}
-/* Pane containers should be borderless too */
-#vnc-view,#ssh-view,#glances-view{border:none!important;margin:0!important;padding:0!important;position:fixed!important;top:4rem!important;left:16rem!important;right:0!important;bottom:0!important;}
+<!DOCTYPE html>
+<html lang="en">
 
-</style>
-<!-- Tailwind CDN to restore original utility classes -->
-<script src="https://cdn.tailwindcss.com"></script>
-</head><body>
-<div id="webcrumbs">
-  <div class="flex flex-col h-screen bg-gray-900 text-gray-300">
-    <header class="bg-gray-800 text-gray-100 px-6 py-4 shadow-md flex justify-between items-center border-b border-gray-700">
-      <h1 class="font-bold text-xl tracking-wide">MANAGEMENT PANEL</h1>
-      <a href="{% url 'clients:overview' %}" class="bg-gray-700 text-gray-200 px-4 py-2 rounded-md font-medium hover:bg-gray-600 transition-colors duration-300 flex items-center gap-2">
-        <span class="material-symbols-outlined">arrow_back</span> Back Home
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ client.name }} — RMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f1a;
+      --surface: #141929;
+      --muted: #252d44;
+      --text: #e2e8f0;
+      --sub: #8892a8;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --danger: #ef4444;
+      --danger-hover: #f87171;
+      --success: #22c55e;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #141929 0%, #1a1040 100%);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--muted);
+      box-shadow: 0 2px 4px -2px rgba(0, 0, 0, .4);
+      height: 64px;
+      z-index: 50;
+      position: relative;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      margin: 0;
+      color: #f3f4f6;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      background: var(--muted);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 0;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 13px;
+      transition: background .2s, transform .1s;
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: #4b5563;
+    }
+
+    .btn:active {
+      transform: scale(.97);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger-hover);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-accent:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Layout */
+    .layout {
+      display: flex;
+      height: calc(100vh - 64px);
+    }
+
+    /* Sidebar */
+    aside {
+      width: 250px;
+      min-width: 250px;
+      background: var(--surface);
+      border-right: 1px solid var(--muted);
+      display: flex;
+      flex-direction: column;
+      transition: transform .3s;
+    }
+
+    .aside-info {
+      padding: 16px;
+      border-bottom: 1px solid var(--muted);
+    }
+
+    .aside-info .client-name {
+      font-weight: 600;
+      font-size: 15px;
+      color: #f3f4f6;
+    }
+
+    .aside-info .client-ip {
+      font-size: 13px;
+      color: var(--sub);
+      margin-top: 2px;
+    }
+
+    .aside-nav {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .nav-btn {
+      width: 100%;
+      text-align: left;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: transparent;
+      border: 0;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 14px;
+      font-family: inherit;
+      transition: background .2s;
+    }
+
+    .nav-btn:hover {
+      background: var(--muted);
+    }
+
+    .nav-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .nav-btn.active .material-symbols-outlined {
+      color: #fff;
+    }
+
+    .aside-footer {
+      padding: 14px 16px;
+      border-top: 1px solid var(--muted);
+    }
+
+    .aside-footer .status-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .aside-footer .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .aside-footer .status-label {
+      font-size: 13px;
+      color: var(--sub);
+    }
+
+    /* Main */
+    main {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    .section.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Dashboard card */
+    #dashboard-section {
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dash-card {
+      background: var(--surface);
+      border: 1px solid var(--muted);
+      border-radius: 14px;
+      padding: 32px;
+      max-width: 520px;
+      text-align: center;
+    }
+
+    .dash-card .icon {
+      font-size: 56px;
+      color: var(--sub);
+    }
+
+    .dash-card h2 {
+      margin: 10px 0 4px;
+      font-size: 20px;
+    }
+
+    .dash-card .sub {
+      color: var(--sub);
+      font-size: 14px;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .pill {
+      background: var(--muted);
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 13px;
+      color: #d1d5db;
+    }
+
+    /* VNC / SSH / Glances panes */
+    .iframe-pane {
+      flex: 1;
+      position: relative;
+      background: #0a0e17;
+    }
+
+    .iframe-pane iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #0a0e17;
+    }
+
+    .pane-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 8px 16px;
+      gap: 8px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--muted);
+    }
+
+    /* Centered launch card for VNC/SSH */
+    .launch-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 16px;
+    }
+    .launch-icon {
+      width: 72px; height: 72px; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,.3);
+    }
+    .launch-icon .material-symbols-outlined { color: #fff; font-size: 36px; }
+    .launch-title { font-size: 18px; font-weight: 700; color: #f1f5f9; }
+    .launch-sub { font-size: 13px; color: var(--sub); max-width: 320px; text-align: center; }
+    .launch-btn {
+      background: var(--accent); color: #fff; border: none;
+      padding: 12px 28px; border-radius: 12px; font-size: 14px;
+      font-weight: 600; cursor: pointer; display: inline-flex;
+      gap: 8px; align-items: center; transition: all .2s;
+      font-family: inherit; box-shadow: 0 4px 16px rgba(99,102,241,.3);
+    }
+    .launch-btn:hover { background: var(--accent-hover); transform: translateY(-2px); }
+    .launch-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .launch-btn.danger { background: var(--danger); box-shadow: 0 4px 16px rgba(239,68,68,.3); }
+    .launch-btn.danger:hover { background: var(--danger-hover); }
+
+    /* Floating stop button when session is active */
+    .floating-stop {
+      position: absolute; top: 12px; right: 16px; z-index: 10;
+      background: var(--danger); color: #fff; border: none;
+      padding: 8px 16px; border-radius: 10px; font-size: 12px;
+      font-weight: 600; cursor: pointer; display: inline-flex;
+      gap: 6px; align-items: center; font-family: inherit;
+      box-shadow: 0 4px 12px rgba(239,68,68,.3); transition: all .2s;
+      opacity: .85;
+    }
+    .floating-stop:hover { opacity: 1; transform: scale(1.03); }
+
+    /* Material icons */
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      font-size: 20px;
+      line-height: 1;
+      color: var(--sub);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* FILE MANAGER STYLES                                                */
+    /* ------------------------------------------------------------------ */
+    .fm-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .fm-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--muted);
+      flex-wrap: wrap;
+    }
+
+    .fm-toolbar .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 13px;
+      flex: 1;
+      min-width: 200px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .fm-toolbar .breadcrumb a {
+      color: var(--accent);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: background .15s;
+    }
+
+    .fm-toolbar .breadcrumb a:hover {
+      background: rgba(99, 102, 241, .15);
+    }
+
+    .fm-toolbar .breadcrumb span {
+      color: var(--sub);
+    }
+
+    .fm-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .fm-table-wrap {
+      flex: 1;
+      overflow: auto;
+      padding: 0;
+    }
+
+    .fm-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .fm-table thead {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .fm-table th {
+      background: var(--surface);
+      border-bottom: 1px solid var(--muted);
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--sub);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .fm-table td {
+      padding: 8px 14px;
+      border-bottom: 1px solid rgba(55, 65, 81, .4);
+      vertical-align: middle;
+    }
+
+    .fm-table tr {
+      transition: background .15s;
+    }
+
+    .fm-table tbody tr:hover {
+      background: rgba(99, 102, 241, .06);
+    }
+
+    .fm-row-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .fm-row-name .material-symbols-outlined {
+      font-size: 20px;
+    }
+
+    .fm-row-name .icon-dir {
+      color: #facc15;
+    }
+
+    .fm-row-name .icon-file {
+      color: var(--sub);
+    }
+
+    .fm-row-name .fname {
+      color: var(--text);
+    }
+
+    .fm-row-name .fname:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    .fm-actions-cell {
+      display: flex;
+      gap: 4px;
+    }
+
+    .fm-icon-btn {
+      background: transparent;
+      border: 1px solid var(--muted);
+      border-radius: 6px;
+      padding: 4px 6px;
+      cursor: pointer;
+      color: var(--sub);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+    }
+
+    .fm-icon-btn:hover {
+      background: var(--muted);
+      color: var(--text);
+    }
+
+    .fm-icon-btn.danger:hover {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+    }
+
+    .fm-empty {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--sub);
+    }
+
+    .fm-loading {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--sub);
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .6);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--muted);
+      border-radius: 14px;
+      padding: 24px;
+      min-width: 380px;
+      max-width: 90vw;
+      max-height: 85vh;
+      overflow: auto;
+      box-shadow: 0 20px 60px -10px rgba(0, 0, 0, .5);
+    }
+
+    .modal h3 {
+      margin: 0 0 16px;
+      font-size: 16px;
+      color: #f3f4f6;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--muted);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .modal-input:focus {
+      border-color: var(--accent);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+
+    .preview-content {
+      background: var(--bg);
+      border: 1px solid var(--muted);
+      border-radius: 8px;
+      padding: 16px;
+      max-height: 55vh;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #d1d5db;
+    }
+
+    .preview-meta {
+      font-size: 12px;
+      color: var(--sub);
+      margin-bottom: 12px;
+    }
+
+    /* Mobile */
+    .sidebar-toggle {
+      display: none;
+    }
+
+    @media (max-width:768px) {
+      aside {
+        position: absolute;
+        z-index: 20;
+        height: 100%;
+        transform: translateX(-100%);
+      }
+
+      aside.open {
+        transform: translateX(0);
+      }
+
+      .sidebar-toggle {
+        display: inline-flex;
+      }
+    }
+
+    /* ===== FLOATING QUICK ACTIONS BAR ===== */
+    .qa-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: linear-gradient(180deg, rgba(20,25,41,.95), rgba(20,25,41,.99));
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--muted);
+      padding: 12px 24px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 -4px 24px rgba(0,0,0,.4);
+    }
+    .qa-bar .qa-label {
+      font-size: 12px; font-weight: 700; color: var(--sub);
+      display: flex; align-items: center; gap: 6px; margin-right: 8px;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .qa-btn {
+      padding: 8px 16px; border-radius: 10px; border: 1px solid var(--muted);
+      font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: all .15s; color: #fff; background: rgba(255,255,255,.06);
+    }
+    .qa-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+    .qa-btn.shutdown { background: var(--danger); border-color: transparent; }
+    .qa-btn.shutdown:hover { background: #dc2626; }
+    .qa-btn.restart { background: var(--warning); border-color: transparent; color: #000; }
+    .qa-btn.restart:hover { background: #d97706; }
+    .qa-btn.lock { background: #3b82f6; border-color: transparent; }
+    .qa-btn.lock:hover { background: #2563eb; }
+    .qa-btn.logoff { background: #f97316; border-color: transparent; }
+    .qa-btn.logoff:hover { background: #ea580c; }
+    .qa-btn.sleep { background: #a855f7; border-color: transparent; }
+    .qa-btn.sleep:hover { background: #9333ea; }
+    .qa-btn.wake { background: var(--success); border-color: transparent; }
+    .qa-btn.wake:hover { background: #16a34a; }
+    .qa-btn.cancel-sd { background: rgba(255,255,255,.1); border-color: var(--muted); color: var(--text); display: none; }
+    .qa-btn.cancel-sd.visible { display: inline-flex; }
+    .qa-btn .material-symbols-outlined { font-size: 16px; }
+    .qa-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    @keyframes qaSpin { to { transform: rotate(360deg); } }
+    .qa-spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: qaSpin .6s linear infinite; }
+    .qa-result {
+      position: fixed; bottom: 70px; right: 24px; z-index: 200;
+      padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600;
+      font-family: 'Inter', sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+      animation: slideUp .3s ease; color: #fff;
+    }
+    .qa-result.success { background: #16a34a; }
+    .qa-result.error { background: #dc2626; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Confirm overlay for quick actions */
+    .qa-confirm-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 150;
+      background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .qa-confirm-overlay.open { opacity: 1; pointer-events: auto; }
+    .qa-confirm {
+      background: #1a2035; border: 1px solid var(--muted); border-radius: 16px;
+      padding: 24px; width: 420px; max-width: 95vw;
+      transform: scale(.95); transition: transform .2s;
+    }
+    .qa-confirm-overlay.open .qa-confirm { transform: scale(1); }
+    .qa-confirm h3 { font-size: 16px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
+    .qa-confirm p { font-size: 13px; color: var(--sub); margin-bottom: 16px; }
+    .qa-confirm .qa-cf-btns { display: flex; gap: 10px; justify-content: flex-end; }
+    .qa-cf-btn {
+      padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit; border: 1px solid var(--muted);
+      transition: all .15s;
+    }
+    .qa-cf-btn.cancel { background: rgba(255,255,255,.06); color: var(--text); }
+    .qa-cf-btn.cancel:hover { background: rgba(255,255,255,.1); }
+    .qa-cf-btn.do { border-color: transparent; color: #fff; }
+    .qa-cf-btn.do.red { background: var(--danger); }
+    .qa-cf-btn.do.amber { background: var(--warning); color: #000; }
+    .qa-cf-btn.do.orange { background: #f97316; }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <button class="btn sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Toggle sidebar">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#a855f7);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(99,102,241,.3)">
+        <span class="material-symbols-outlined" style="color:#fff;font-size:18px">hub</span>
+      </div>
+      <h1>{{ client.name }}</h1>
+    </div>
+    <div class="header-actions">
+      <a href="{% url 'clients:overview' %}" class="btn">
+        <span class="material-symbols-outlined">arrow_back</span> All Clients
       </a>
-    </header>
-    <div class="flex flex-1 overflow-hidden">
-  <aside class="bg-gray-800 w-64 shadow-sm flex flex-col transition-all duration-300 transform md:translate-x-0 -translate-x-full absolute md:relative z-10 h-[calc(100vh-4rem)]">
-        <div class="p-4 border-b border-gray-700">
-          <h2 class="font-semibold text-gray-200">{{ client.name }}</h2>
-          <p class="text-sm text-gray-400">{{ client.ip_address }}</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="aside-info">
+        <div class="client-name">{{ client.name }}</div>
+        <div class="client-ip">{{ client.ip_address }}</div>
+      </div>
+      <div class="aside-nav">
+        <button class="nav-btn active" data-pane="dashboard" id="nav-dashboard">
+          <span class="material-symbols-outlined">dashboard</span><span>Dashboard</span>
+        </button>
+        <button class="nav-btn" data-pane="vnc" id="nav-vnc">
+          <span class="material-symbols-outlined">desktop_windows</span><span>VNC</span>
+        </button>
+        <button class="nav-btn" data-pane="glances" id="nav-glances">
+          <span class="material-symbols-outlined">landscape</span><span>Glances</span>
+        </button>
+        <button class="nav-btn" data-pane="ssh" id="nav-ssh">
+          <span class="material-symbols-outlined">terminal</span><span>SSH</span>
+        </button>
+        <button class="nav-btn" data-pane="files" id="nav-files">
+          <span class="material-symbols-outlined">folder_open</span><span>Files</span>
+        </button>
+        <button class="nav-btn" data-pane="alerts" id="nav-alerts" style="position:relative">
+          <span class="material-symbols-outlined">notifications</span><span>Alerts</span>
+          <span class="alert-dot" id="client-alert-dot" style="display:none;position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:50%;background:#ef4444"></span>
+        </button>
+        <div style="border-top:1px solid var(--muted);margin:8px 0"></div>
+        <a href="{% url 'clients:edit_client' client.id %}" class="nav-btn" style="text-decoration:none;color:inherit">
+          <span class="material-symbols-outlined">edit</span><span>Edit Client</span>
+        </a>
+      </div>
+      <div class="aside-footer">
+        <div class="status-row">
+          <span class="status-dot" id="client-status-dot" style="background:var(--warning)"></span>
+          <span class="status-label" id="client-status-label">Checking…</span>
         </div>
-        <div class="flex flex-col gap-2 p-4">
-          <button class="flex items-center gap-3 px-4 py-3 rounded-md hover:bg-gray-700 transition-colors duration-200 text-left focus:outline-none active-nav-item">
-            <span class="material-symbols-outlined">desktop_windows</span> <span>VNC</span>
-          </button>
-          <button class="flex items-center gap-3 px-4 py-3 rounded-md hover:bg-gray-700 transition-colors duration-200 text-left focus:outline-none focus:ring-2 focus:ring-gray-600" id="glances-nav-btn">
-            <span class="material-symbols-outlined">landscape</span> <span>Glances</span>
-          </button>
-          <button class="flex items-center gap-3 px-4 py-3 rounded-md hover:bg-gray-700 transition-colors duration-200 text-left focus:outline-none focus:ring-2 focus:ring-gray-600">
-            <span class="material-symbols-outlined">terminal</span> <span>SSH</span>
-          </button>
-          
-        </div>
-        <div class="mt-auto p-4 border-t border-gray-700">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-            <span class="text-sm text-gray-400">Online</span>
-          </div>
-          <div class="text-xs text-gray-500 mt-1">Last active: 2 min ago</div>
-        </div>
-      </aside>
-      <main class="flex-1 p-6 overflow-auto">
-        <div class="md:hidden mb-4">
-          <button
-            class="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-800 text-gray-200 border border-gray-700 shadow-sm hover:bg-gray-700 active:scale-[.98] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-            id="sidebar-toggle"
-            aria-label="Toggle sidebar"
-            aria-expanded="false"
-            type="button"
-          >
-            <span class="material-symbols-outlined text-gray-300">menu</span>
-            <span class="text-sm font-medium">Menu</span>
-          </button>
-        </div>
-        <div id="default-center" class="flex items-center justify-center h-full">
-          <div class="bg-gray-800 p-8 rounded-lg shadow-md text-center max-w-md border border-gray-700">
-            <span class="material-symbols-outlined text-6xl text-gray-600 mb-4">devices</span>
-            <h2 class="text-xl font-semibold text-gray-200 mb-2">Client Dashboard</h2>
-            <p class="text-gray-400 mb-6">Select an option from the sidebar to manage this client.</p>
-            <div class="flex flex-wrap justify-center gap-3">
-              <div class="flex items-center gap-2 px-3 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">
-                <span class="material-symbols-outlined text-gray-400">memory</span>
-                <span class="text-sm text-gray-300">{{ client.os_name|default:"Windows" }}</span>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main>
+      <!-- Dashboard pane (default) -->
+      <div id="pane-dashboard" class="section active">
+        <div style="padding:28px;overflow:auto;height:100%">
+          <!-- Client Info Header -->
+          <div style="display:flex;align-items:center;gap:18px;margin-bottom:28px">
+            <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(59,130,246,.3)">
+              <span class="material-symbols-outlined" style="color:#fff;font-size:28px">desktop_windows</span>
+            </div>
+            <div>
+              <h2 style="font-size:22px;font-weight:800;margin:0 0 4px;color:#f1f5f9">{{ client.name }}</h2>
+              <div style="font-size:13px;color:var(--sub)">
+                {{ client.ip_address }} &nbsp;·&nbsp; {{ client.os_name|default:"Windows" }} &nbsp;·&nbsp; SSH Port {{ client.ssh_port|default:"22" }}
               </div>
-              <div class="flex items-center gap-2 px-3 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">
-                <span class="material-symbols-outlined text-gray-400">lan</span>
-                <span class="text-sm text-gray-300">{{ client.ip_address }}</span>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+              <span id="dash-status-dot" style="width:10px;height:10px;border-radius:50%;background:var(--warning)"></span>
+              <span id="dash-status-label" style="font-size:13px;color:var(--sub)">Checking…</span>
+            </div>
+          </div>
+
+          {% if not client.ssh_password %}
+          <!-- SSH Password Warning Banner -->
+          <div style="background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));border:1px solid rgba(245,158,11,.3);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+            <span class="material-symbols-outlined" style="color:#f59e0b;font-size:22px">warning</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600;color:#fbbf24">SSH password not configured</div>
+              <div style="font-size:12px;color:var(--sub);margin-top:2px">VNC, SSH, File Manager, and Deployment features require SSH credentials.</div>
+            </div>
+            <a href="{% url 'clients:edit_client' client.id %}" class="btn btn-accent" style="font-size:12px;padding:6px 14px;white-space:nowrap">
+              <span class="material-symbols-outlined" style="font-size:14px;color:#fff">vpn_key</span> Set Password
+            </a>
+          </div>
+          {% endif %}
+
+          <!-- Quick Launch Grid -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:28px">
+            <button class="nav-btn" data-pane="vnc" style="background:var(--bg);border:1px solid var(--muted);border-radius:14px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--muted)'">
+              <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center">
+                <span class="material-symbols-outlined" style="color:#fff;font-size:22px">desktop_windows</span>
+              </div>
+              <span style="font-size:13px;font-weight:600;color:var(--text)">VNC Remote</span>
+              <span style="font-size:11px;color:var(--sub)">Screen sharing</span>
+            </button>
+            <button class="nav-btn" data-pane="ssh" style="background:var(--bg);border:1px solid var(--muted);border-radius:14px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--muted)'">
+              <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);display:flex;align-items:center;justify-content:center">
+                <span class="material-symbols-outlined" style="color:#fff;font-size:22px">terminal</span>
+              </div>
+              <span style="font-size:13px;font-weight:600;color:var(--text)">SSH Terminal</span>
+              <span style="font-size:11px;color:var(--sub)">Remote shell</span>
+            </button>
+            <button class="nav-btn" data-pane="glances" style="background:var(--bg);border:1px solid var(--muted);border-radius:14px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--muted)'">
+              <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center">
+                <span class="material-symbols-outlined" style="color:#fff;font-size:22px">monitoring</span>
+              </div>
+              <span style="font-size:13px;font-weight:600;color:var(--text)">System Monitor</span>
+              <span style="font-size:11px;color:var(--sub)">CPU, RAM, Disk</span>
+            </button>
+            <button class="nav-btn" data-pane="files" style="background:var(--bg);border:1px solid var(--muted);border-radius:14px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--muted)'">
+              <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center">
+                <span class="material-symbols-outlined" style="color:#fff;font-size:22px">folder_open</span>
+              </div>
+              <span style="font-size:13px;font-weight:600;color:var(--text)">File Manager</span>
+              <span style="font-size:11px;color:var(--sub)">Browse & transfer</span>
+            </button>
+          </div>
+
+          <!-- Connection Details -->
+          <div style="background:var(--bg);border:1px solid var(--muted);border-radius:14px;padding:20px;margin-bottom:16px">
+            <h3 style="font-size:14px;font-weight:700;margin:0 0 14px;color:#f1f5f9">Connection Details</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="material-symbols-outlined" style="color:var(--sub);font-size:18px">lan</span>
+                <div><div style="font-size:11px;color:var(--sub)">IP Address</div><div style="font-size:13px;font-weight:600">{{ client.ip_address }}</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="material-symbols-outlined" style="color:var(--sub);font-size:18px">vpn_lock</span>
+                <div><div style="font-size:11px;color:var(--sub)">SSH Port</div><div style="font-size:13px;font-weight:600">{{ client.ssh_port|default:"22" }}</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="material-symbols-outlined" style="color:var(--sub);font-size:18px">person</span>
+                <div><div style="font-size:11px;color:var(--sub)">SSH User</div><div style="font-size:13px;font-weight:600">{{ client.ssh_username|default:"—" }}</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="material-symbols-outlined" style="color:var(--sub);font-size:18px">monitoring</span>
+                <div><div style="font-size:11px;color:var(--sub)">Glances Port</div><div style="font-size:13px;font-weight:600">{{ client.glances_port|default:"61208" }}</div></div>
+              </div>
+              {% if client.mac_address %}
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="material-symbols-outlined" style="color:var(--sub);font-size:18px">router</span>
+                <div><div style="font-size:11px;color:var(--sub)">MAC Address</div><div style="font-size:13px;font-weight:600">{{ client.mac_address }}</div></div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if client.cpu or client.ram_gb or client.disk_gb %}
+          <!-- Hardware Info -->
+          <div style="background:var(--bg);border:1px solid var(--muted);border-radius:14px;padding:20px">
+            <h3 style="font-size:14px;font-weight:700;margin:0 0 14px;color:#f1f5f9">Hardware Info</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+              {% if client.cpu %}
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="material-symbols-outlined" style="color:var(--sub);font-size:18px">memory</span>
+                <div><div style="font-size:11px;color:var(--sub)">CPU</div><div style="font-size:13px;font-weight:600">{{ client.cpu }}</div></div>
+              </div>
+              {% endif %}
+              {% if client.ram_gb %}
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="material-symbols-outlined" style="color:var(--sub);font-size:18px">memory_alt</span>
+                <div><div style="font-size:11px;color:var(--sub)">RAM</div><div style="font-size:13px;font-weight:600">{{ client.ram_gb }} GB</div></div>
+              </div>
+              {% endif %}
+              {% if client.disk_gb %}
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="material-symbols-outlined" style="color:var(--sub);font-size:18px">hard_drive</span>
+                <div><div style="font-size:11px;color:var(--sub)">Disk</div><div style="font-size:13px;font-weight:600">{{ client.disk_gb }} GB</div></div>
+              </div>
+              {% endif %}
+              {% if client.os_version %}
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="material-symbols-outlined" style="color:var(--sub);font-size:18px">info</span>
+                <div><div style="font-size:11px;color:var(--sub)">OS Version</div><div style="font-size:13px;font-weight:600">{{ client.os_version }}</div></div>
+              </div>
+              {% endif %}
+              {% if client.last_seen %}
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="material-symbols-outlined" style="color:var(--sub);font-size:18px">schedule</span>
+                <div><div style="font-size:11px;color:var(--sub)">Last Seen</div><div style="font-size:13px;font-weight:600">{{ client.last_seen|timesince }} ago</div></div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- VNC pane -->
+      <div id="pane-vnc" class="section">
+        <!-- Launch card (shown when no VNC session) -->
+        <div class="launch-card" id="vnc-launch">
+          <div class="launch-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+            <span class="material-symbols-outlined">desktop_windows</span>
+          </div>
+          <div class="launch-title">VNC Remote Desktop</div>
+          <div class="launch-sub">Start a remote desktop session to view and control this client's screen in real-time.</div>
+          <button class="launch-btn" id="vnc-start-btn">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:18px">play_arrow</span> Start VNC Session
+          </button>
+        </div>
+        <!-- Active session (hidden by default) -->
+        <div class="iframe-pane" id="vnc-session" style="display:none;position:relative">
+          <button class="floating-stop" id="vnc-stop-btn">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:14px">stop</span> Stop VNC
+          </button>
+          <iframe id="vnc-iframe" src="about:blank" allow="fullscreen" allowfullscreen></iframe>
+        </div>
+      </div>
+
+      <!-- Glances pane -->
+      <div id="pane-glances" class="section">
+        <div class="pane-toolbar">
+          <a href="{{ glances_url }}" target="_blank" rel="noopener" class="btn btn-accent">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:16px;">open_in_new</span> Open in New Tab
+          </a>
+        </div>
+        <div class="iframe-pane">
+          <iframe id="glances-iframe" src="about:blank" allow="fullscreen" allowfullscreen></iframe>
+        </div>
+      </div>
+
+      <!-- SSH pane -->
+      <div id="pane-ssh" class="section">
+        <!-- Launch card (shown when no SSH session) -->
+        <div class="launch-card" id="ssh-launch">
+          <div class="launch-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a)">
+            <span class="material-symbols-outlined">terminal</span>
+          </div>
+          <div class="launch-title">SSH Terminal</div>
+          <div class="launch-sub">Open a secure shell terminal to execute commands remotely on this client.</div>
+          <button class="launch-btn" id="ssh-start-btn">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:18px">play_arrow</span> Start SSH Session
+          </button>
+          <!-- Error banner (hidden by default) -->
+          <div id="ssh-error" style="display:none;margin-top:16px;max-width:480px;width:100%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:14px 18px;text-align:left">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span class="material-symbols-outlined" style="color:#ef4444;font-size:20px;flex-shrink:0;margin-top:1px">error</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:#fca5a5;margin-bottom:4px">SSH Connection Failed</div>
+                <div id="ssh-error-msg" style="font-size:12px;color:#a8a8b3;line-height:1.5"></div>
               </div>
             </div>
           </div>
         </div>
-        <!-- Dynamic panes (hidden by default) -->
-  <div id="vnc-view" style="display:none;" class="fixed">
-          <div class="absolute top-2 right-2 flex gap-2 z-10">
-            <button id="vnc-stop-btn" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-md text-sm">Stop</button>
-          </div>
-          <iframe id="vnc-iframe" style="width:100%; height:100%; border:0; outline:none;"></iframe>
+        <!-- Active session (hidden by default) -->
+        <div class="iframe-pane" id="ssh-session" style="display:none;position:relative">
+          <button class="floating-stop" id="ssh-stop-btn">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:14px">stop</span> Stop SSH
+          </button>
+          <iframe id="ssh-iframe" src="about:blank" allow="fullscreen; clipboard-read; clipboard-write" allowfullscreen style="background:#0a0e17"></iframe>
         </div>
-  <div id="glances-view" style="display:none;" class="fixed">
-          <div class="absolute top-2 right-2 flex gap-2 z-10">
-            <a href="{{ glances_url }}" target="_blank" rel="noopener" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md text-sm">Open External</a>
+      </div>
+
+      <!-- Alerts pane -->
+      <div id="pane-alerts" class="section">
+        <div style="padding:28px;overflow:auto;height:100%">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+            <h3 style="font-size:16px;font-weight:700;color:#f1f5f9;display:flex;align-items:center;gap:10px">
+              <span class="material-symbols-outlined" style="color:#ef4444;font-size:22px">notifications_active</span>
+              Recent Alerts (Last 24h)
+            </h3>
+            <a href="{% url 'alerts:dashboard' %}" style="font-size:12px;color:var(--accent);font-weight:600;text-decoration:none">View All →</a>
           </div>
-          <iframe id="glances-iframe" src="about:blank" style="width:100%; height:100%; border:0; outline:none;"></iframe>
-        </div>
-  <div id="ssh-view" style="display:none;" class="fixed">
-          <div class="absolute top-2 right-2 flex gap-2 z-10">
-            <button id="ssh-stop-btn" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-md text-sm">Stop</button>
+          <div id="alerts-list" style="display:flex;flex-direction:column;gap:10px">
+            <div style="text-align:center;padding:40px;color:var(--sub)">
+              <span class="material-symbols-outlined" style="font-size:36px;color:var(--sub);margin-bottom:8px;display:block">hourglass_top</span>
+              Loading alerts…
+            </div>
           </div>
-          <iframe id="ssh-iframe" style="width:100%; height:100%; border:0; outline:none;"></iframe>
         </div>
-        
-      </main>
+      </div>
+
+      <!-- Files pane (SFTP File Manager) -->
+      <div id="pane-files" class="section">
+        <div class="fm-container">
+          <div class="fm-toolbar">
+            <div class="breadcrumb" id="fm-breadcrumb">
+              <a data-path="/">/</a>
+            </div>
+            <div class="fm-actions">
+              <button class="btn" id="fm-refresh-btn" title="Refresh">
+                <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
+              </button>
+              <button class="btn" id="fm-mkdir-btn" title="New Folder">
+                <span class="material-symbols-outlined" style="font-size:16px;">create_new_folder</span> New Folder
+              </button>
+              <label class="btn btn-accent" id="fm-upload-label" title="Upload File" style="cursor:pointer;">
+                <span class="material-symbols-outlined" style="color:#fff;font-size:16px;">upload_file</span> Upload
+                <input type="file" id="fm-upload-input" style="display:none;" />
+              </label>
+            </div>
+          </div>
+          <div class="fm-table-wrap">
+            <table class="fm-table">
+              <thead>
+                <tr>
+                  <th style="width:45%;">Name</th>
+                  <th style="width:15%;">Size</th>
+                  <th style="width:22%;">Modified</th>
+                  <th style="width:18%;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="fm-tbody">
+                <tr>
+                  <td colspan="4" class="fm-loading">Select the Files tab to browse…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: New Folder -->
+  <div class="modal-overlay" id="modal-mkdir">
+    <div class="modal">
+      <h3>New Folder</h3>
+      <input class="modal-input" id="mkdir-name" type="text" placeholder="Folder name" autofocus />
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal('modal-mkdir')">Cancel</button>
+        <button class="btn btn-accent" id="mkdir-submit">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Rename -->
+  <div class="modal-overlay" id="modal-rename">
+    <div class="modal">
+      <h3>Rename</h3>
+      <input class="modal-input" id="rename-input" type="text" placeholder="New name" />
+      <input type="hidden" id="rename-src" />
+      <input type="hidden" id="rename-dir" />
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal('modal-rename')">Cancel</button>
+        <button class="btn btn-accent" id="rename-submit">Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Preview -->
+  <div class="modal-overlay" id="modal-preview">
+    <div class="modal" style="min-width:500px;max-width:70vw;">
+      <h3 id="preview-title">File Preview</h3>
+      <div class="preview-meta" id="preview-meta"></div>
+      <pre class="preview-content" id="preview-content"></pre>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal('modal-preview')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // --- Utility ---
+      function getCookie(name) {
+        const v = `; ${document.cookie}`;
+        const p = v.split(`; ${name}=`);
+        if (p.length === 2) return p.pop().split(';').shift();
+      }
+      const csrftoken = getCookie('csrftoken');
+
+      function postJSON(url, body) {
+        return fetch(url, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(body)
+        }).then(r => r.json());
+      }
+      function getJSON(url) {
+        return fetch(url, { credentials: 'same-origin' }).then(r => r.json());
+      }
+
+      // --- Navigation ---
+      const navBtns = document.querySelectorAll('.nav-btn');
+      const panes = document.querySelectorAll('.section');
+
+      function showPane(name) {
+        navBtns.forEach(b => b.classList.toggle('active', b.dataset.pane === name));
+        panes.forEach(p => {
+          const id = p.id.replace('pane-', '');
+          if (id === name) { p.classList.add('active'); } else { p.classList.remove('active'); }
+        });
+        // Hide quick actions bar on VNC pane so it doesn't cover the remote desktop
+        const qaBar = document.querySelector('.qa-bar');
+        if (qaBar) qaBar.style.display = (name === 'vnc') ? 'none' : '';
+        // Lazy init glances
+        if (name === 'glances') {
+          const gf = document.getElementById('glances-iframe');
+          if (gf && (gf.src === 'about:blank' || !gf.src)) gf.src = '{{ glances_url }}';
+        }
+        // Lazy init files
+        if (name === 'files' && !filesLoaded) {
+          filesLoaded = true;
+          fmBrowse('/');
+        }
+        // Lazy init alerts
+        if (name === 'alerts') {
+          loadClientAlerts();
+        }
+      }
+      navBtns.forEach(b => b.addEventListener('click', () => showPane(b.dataset.pane)));
+
+      // Mobile sidebar toggle
+      const sidebarToggle = document.getElementById('sidebar-toggle');
+      const sidebar = document.getElementById('sidebar');
+      if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+      }
+
+      // --- Client status check ---
+      (function checkStatus() {
+        fetch("{% url 'clients:glances_health' client.id %}", { credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(d => {
+            const dot = document.getElementById('client-status-dot');
+            const lbl = document.getElementById('client-status-label');
+            if (d.reachable) { dot.style.background = 'var(--success)'; lbl.textContent = 'Online'; }
+            else { dot.style.background = 'var(--danger)'; lbl.textContent = 'Offline'; }
+            // Also update dashboard pane status
+            const dd = document.getElementById('dash-status-dot');
+            const dl = document.getElementById('dash-status-label');
+            if (dd) dd.style.background = d.reachable ? 'var(--success)' : 'var(--danger)';
+            if (dl) dl.textContent = d.reachable ? 'Online' : 'Offline';
+          })
+          .catch(() => {
+            document.getElementById('client-status-dot').style.background = 'var(--danger)';
+            document.getElementById('client-status-label').textContent = 'Offline';
+          });
+      })();
+
+      // --- VNC ---
+      const vncIframe = document.getElementById('vnc-iframe');
+      const vncStartBtn = document.getElementById('vnc-start-btn');
+      const vncStopBtn = document.getElementById('vnc-stop-btn');
+
+      const vncLaunch = document.getElementById('vnc-launch');
+      const vncSessionDiv = document.getElementById('vnc-session');
+
+      function showVncSession() {
+        vncLaunch.style.display = 'none';
+        vncSessionDiv.style.display = 'flex';
+        vncSessionDiv.style.flex = '1';
+        vncSessionDiv.style.flexDirection = 'column';
+      }
+      function showVncLaunch() {
+        vncSessionDiv.style.display = 'none';
+        vncLaunch.style.display = 'flex';
+        vncIframe.src = 'about:blank';
+      }
+
+      {% if running and session %}
+      vncIframe.src = window.location.protocol + '//' + window.location.hostname + ':{{ session.listen_port }}/vnc.html?resize=scale';
+      showVncSession();
+      {% endif %}
+
+      vncStartBtn.addEventListener('click', function () {
+        vncStartBtn.disabled = true;
+        vncStartBtn.innerHTML = '<span class="material-symbols-outlined" style="color:#fff;font-size:18px">hourglass_top</span> Connecting…';
+        fetch("{% url 'clients:start_vnc' client.id %}", { method: 'POST', headers: { 'X-CSRFToken': csrftoken }, credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(d => {
+            if (d.ok && d.url) {
+              vncIframe.src = d.url;
+              showVncSession();
+            } else { alert(d.error || 'Failed to start VNC'); }
+          })
+          .catch(err => alert('Error: ' + err))
+          .finally(() => { vncStartBtn.disabled = false; vncStartBtn.innerHTML = '<span class="material-symbols-outlined" style="color:#fff;font-size:18px">play_arrow</span> Start VNC Session'; });
+      });
+
+      vncStopBtn.addEventListener('click', function () {
+        fetch("{% url 'clients:stop_vnc' client.id %}", { method: 'POST', headers: { 'X-CSRFToken': csrftoken }, credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(d => { showVncLaunch(); })
+          .catch(err => alert('Error: ' + err));
+      });
+
+      // --- SSH ---
+      const sshIframe = document.getElementById('ssh-iframe');
+      const sshStartBtn = document.getElementById('ssh-start-btn');
+      const sshStopBtn = document.getElementById('ssh-stop-btn');
+
+      const sshLaunch = document.getElementById('ssh-launch');
+      const sshSessionDiv = document.getElementById('ssh-session');
+      const sshError = document.getElementById('ssh-error');
+      const sshErrorMsg = document.getElementById('ssh-error-msg');
+
+      function showSshSession() {
+        sshLaunch.style.display = 'none';
+        sshError.style.display = 'none';
+        sshSessionDiv.style.display = 'flex';
+        sshSessionDiv.style.flex = '1';
+        sshSessionDiv.style.flexDirection = 'column';
+      }
+      function showSshLaunch() {
+        sshSessionDiv.style.display = 'none';
+        sshLaunch.style.display = 'flex';
+        sshIframe.src = 'about:blank';
+      }
+      function showSshError(msg) {
+        sshErrorMsg.textContent = msg;
+        sshError.style.display = 'block';
+      }
+
+      {% if ssh_running and ssh_session %}
+      // Build wrapper URL for existing session
+      (function() {
+        const wrapperBase = "{% url 'clients:ssh_terminal_wrapper' client.id %}";
+        // The view already returned the full URL; reconstruct it here for resume
+        const rawUrl = "{{ ssh_url|escapejs }}";
+        sshIframe.src = wrapperBase + '?url=' + encodeURIComponent(rawUrl);
+        showSshSession();
+      })();
+      {% endif %}
+
+      sshStartBtn.addEventListener('click', function () {
+        sshStartBtn.disabled = true;
+        sshError.style.display = 'none';
+        sshStartBtn.innerHTML = '<span class="material-symbols-outlined" style="color:#fff;font-size:18px">hourglass_top</span> Connecting…';
+        fetch("{% url 'clients:start_ssh' client.id %}", { method: 'POST', headers: { 'X-CSRFToken': csrftoken }, credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(d => {
+            if (d.ok && d.url) {
+              // Load via dark wrapper page
+              const wrapperBase = "{% url 'clients:ssh_terminal_wrapper' client.id %}";
+              sshIframe.src = wrapperBase + '?url=' + encodeURIComponent(d.url);
+              showSshSession();
+            } else {
+              showSshError(d.error || 'Failed to start SSH. Check client credentials and connectivity.');
+            }
+          })
+          .catch(err => showSshError('Network error: ' + err))
+          .finally(() => { sshStartBtn.disabled = false; sshStartBtn.innerHTML = '<span class="material-symbols-outlined" style="color:#fff;font-size:18px">play_arrow</span> Start SSH Session'; });
+      });
+
+      sshStopBtn.addEventListener('click', function () {
+        fetch("{% url 'clients:stop_ssh' client.id %}", { method: 'POST', headers: { 'X-CSRFToken': csrftoken }, credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(d => { showSshLaunch(); })
+          .catch(err => alert('Error: ' + err));
+      });
+
+      // ====================================================================
+      // ALERTS
+      // ====================================================================
+      let alertsLoaded = false;
+      function loadClientAlerts() {
+        if (alertsLoaded) return;
+        alertsLoaded = true;
+        const container = document.getElementById('alerts-list');
+        fetch('/api/alerts/client/{{ client.id }}/', { credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(d => {
+            if (!d.ok || !d.items || d.items.length === 0) {
+              container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--sub)"><span class="material-symbols-outlined" style="font-size:36px;color:#22c55e;margin-bottom:8px;display:block">verified</span>No alerts in the last 24 hours</div>';
+              return;
+            }
+            let html = '';
+            d.items.forEach(a => {
+              const icon = a.alert_type === 'process' ? 'sports_esports' : 'language';
+              const color = a.alert_type === 'process' ? '#ef4444' : '#f59e0b';
+              const badge = a.alert_type === 'process' ? 'Process' : 'Browser';
+              const status = a.is_active ? '<span style="color:#fca5a5;font-size:11px;font-weight:600">● Active</span>' : '<span style="color:#86efac;font-size:11px;font-weight:600">✓ Dismissed</span>';
+              const time = new Date(a.received_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              html += `
+                <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${color};border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px">
+                  <div style="width:36px;height:36px;border-radius:10px;background:rgba(${a.alert_type==='process'?'239,68,68':'245,158,11'},.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <span class="material-symbols-outlined" style="color:${color};font-size:18px">${icon}</span>
+                  </div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:14px;font-weight:600;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.detected_name}</div>
+                    <div style="font-size:11px;color:var(--sub);margin-top:2px">${time} · ${badge}</div>
+                  </div>
+                  ${status}
+                </div>`;
+            });
+            container.innerHTML = html;
+
+            // Show alert dot
+            if (d.active_count > 0) {
+              document.getElementById('client-alert-dot').style.display = 'block';
+            }
+          })
+          .catch(() => {
+            container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--sub)">Failed to load alerts</div>';
+          });
+      }
+
+      // Check alert count for this client on page load
+      fetch('/api/alerts/client/{{ client.id }}/', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok && d.active_count > 0) {
+            document.getElementById('client-alert-dot').style.display = 'block';
+          }
+        })
+        .catch(() => {});
+
+      // ====================================================================
+      // SFTP FILE MANAGER
+      // ====================================================================
+      let fmCwd = '/';
+      let filesLoaded = false;
+      const fmTbody = document.getElementById('fm-tbody');
+      const fmBreadcrumb = document.getElementById('fm-breadcrumb');
+      const CLIENT_ID = {{ client.id }};
+
+    // Text extensions allowed for preview (synced with backend)
+    const TEXT_EXTS = new Set([
+      '.txt', '.log', '.md', '.json', '.xml', '.yaml', '.yml', '.csv', '.ini', '.cfg', '.conf', '.toml',
+      '.env', '.sh', '.bash', '.bat', '.cmd', '.ps1', '.py', '.js', '.ts', '.html', '.htm', '.css',
+      '.sql', '.java', '.c', '.cpp', '.h', '.hpp', '.cs', '.go', '.rb', '.php', '.rs', '.swift',
+      '.kt', '.lua', '.r', '.pl', '.gitignore', '.editorconfig', '.dockerfile'
+    ]);
+
+    function fmUrl(action) { return '/clients/' + CLIENT_ID + '/files/' + action + '/'; }
+
+    function humanSize(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024, sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function humanDate(ts) {
+      if (!ts) return '—';
+      const d = new Date(ts * 1000);
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+        + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function getExt(name) {
+      const i = name.lastIndexOf('.');
+      return i > 0 ? name.substring(i).toLowerCase() : '';
+    }
+
+    function updateBreadcrumb(path) {
+      const parts = path.split('/').filter(Boolean);
+      let html = '<a data-path="/" style="cursor:pointer;">/</a>';
+      let accum = '';
+      for (const p of parts) {
+        accum += '/' + p;
+        html += '<span style="color:var(--sub);margin:0 2px;">›</span>';
+        html += '<a data-path="' + accum + '" style="cursor:pointer;">' + p + '</a>';
+      }
+      fmBreadcrumb.innerHTML = html;
+      fmBreadcrumb.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => fmBrowse(a.dataset.path));
+      });
+    }
+
+    function fmBrowse(path) {
+      fmCwd = path || '/';
+      fmTbody.innerHTML = '<tr><td colspan="4" class="fm-loading">Loading…</td></tr>';
+      updateBreadcrumb(fmCwd);
+
+      getJSON(fmUrl('browse') + '?path=' + encodeURIComponent(fmCwd))
+        .then(d => {
+          if (!d.ok) { fmTbody.innerHTML = '<tr><td colspan="4" class="fm-empty">Error: ' + d.error + '</td></tr>'; return; }
+          if (!d.items.length) {
+            // Show parent link for empty dirs
+            let html = '';
+            if (fmCwd !== '/') {
+              html += makeParentRow();
+            }
+            html += '<tr><td colspan="4" class="fm-empty">This directory is empty.</td></tr>';
+            fmTbody.innerHTML = html;
+            bindParentRow();
+            return;
+          }
+          let html = '';
+          // Parent directory link
+          if (fmCwd !== '/') {
+            html += makeParentRow();
+          }
+          for (const item of d.items) {
+            const icon = item.is_dir
+              ? '<span class="material-symbols-outlined icon-dir">folder</span>'
+              : '<span class="material-symbols-outlined icon-file">description</span>';
+            const ext = getExt(item.name);
+            const canPreview = !item.is_dir && TEXT_EXTS.has(ext);
+
+            html += '<tr>';
+            html += '<td><div class="fm-row-name">' + icon + '<span class="fname" data-path="' + item.path + '" data-isdir="' + (item.is_dir ? 1 : 0) + '">' + item.name + '</span></div></td>';
+            html += '<td style="color:var(--sub);">' + (item.is_dir ? '—' : humanSize(item.size)) + '</td>';
+            html += '<td style="color:var(--sub);">' + humanDate(item.mtime) + '</td>';
+            html += '<td><div class="fm-actions-cell">';
+            if (!item.is_dir) {
+              html += '<button class="fm-icon-btn" title="Download" data-action="download" data-path="' + item.path + '"><span class="material-symbols-outlined" style="font-size:16px;">download</span></button>';
+            }
+            if (canPreview) {
+              html += '<button class="fm-icon-btn" title="Preview" data-action="preview" data-path="' + item.path + '"><span class="material-symbols-outlined" style="font-size:16px;">visibility</span></button>';
+            }
+            html += '<button class="fm-icon-btn" title="Rename" data-action="rename" data-path="' + item.path + '" data-name="' + item.name + '"><span class="material-symbols-outlined" style="font-size:16px;">edit</span></button>';
+            html += '<button class="fm-icon-btn danger" title="Delete" data-action="delete" data-path="' + item.path + '" data-name="' + item.name + '" data-isdir="' + (item.is_dir ? 1 : 0) + '"><span class="material-symbols-outlined" style="font-size:16px;">delete</span></button>';
+            html += '</div></td>';
+            html += '</tr>';
+          }
+          fmTbody.innerHTML = html;
+          bindFileActions();
+          bindParentRow();
+        })
+        .catch(err => {
+          fmTbody.innerHTML = '<tr><td colspan="4" class="fm-empty">Failed to load: ' + err + '</td></tr>';
+        });
+    }
+
+    function makeParentRow() {
+      const parent = fmCwd.substring(0, fmCwd.lastIndexOf('/')) || '/';
+      return '<tr class="fm-parent-row"><td colspan="4"><div class="fm-row-name"><span class="material-symbols-outlined icon-dir">folder_open</span><span class="fname" data-path="' + parent + '" data-isdir="1" style="color:var(--accent);">..</span></div></td></tr>';
+    }
+    function bindParentRow() {
+      document.querySelectorAll('.fm-parent-row .fname').forEach(el => {
+        el.addEventListener('click', () => fmBrowse(el.dataset.path));
+      });
+    }
+
+    function bindFileActions() {
+      // Click on file/folder name
+      fmTbody.querySelectorAll('.fname').forEach(el => {
+        el.addEventListener('click', function () {
+          if (this.dataset.isdir === '1') {
+            fmBrowse(this.dataset.path);
+          }
+        });
+      });
+      // Action buttons
+      fmTbody.querySelectorAll('.fm-icon-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const action = this.dataset.action;
+          const path = this.dataset.path;
+          if (action === 'download') fmDownload(path);
+          else if (action === 'preview') fmPreview(path);
+          else if (action === 'rename') fmRenamePrompt(path, this.dataset.name);
+          else if (action === 'delete') fmDeleteConfirm(path, this.dataset.name, this.dataset.isdir === '1');
+        });
+      });
+    }
+
+    // Download
+    function fmDownload(path) {
+      const a = document.createElement('a');
+      a.href = fmUrl('download') + '?path=' + encodeURIComponent(path);
+      a.download = '';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // Preview
+    function fmPreview(path) {
+      const filename = path.split('/').pop();
+      document.getElementById('preview-title').textContent = 'Preview: ' + filename;
+      document.getElementById('preview-meta').textContent = 'Loading…';
+      document.getElementById('preview-content').textContent = '';
+      openModal('modal-preview');
+
+      getJSON(fmUrl('preview') + '?path=' + encodeURIComponent(path))
+        .then(d => {
+          if (!d.ok) {
+            document.getElementById('preview-meta').textContent = 'Error';
+            document.getElementById('preview-content').textContent = d.error;
+            return;
+          }
+          document.getElementById('preview-meta').textContent = d.filename + ' — ' + humanSize(d.size);
+          document.getElementById('preview-content').textContent = d.content;
+        })
+        .catch(err => {
+          document.getElementById('preview-meta').textContent = 'Error';
+          document.getElementById('preview-content').textContent = String(err);
+        });
+    }
+
+    // Upload
+    document.getElementById('fm-upload-input').addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('path', fmCwd);
+
+      // Show uploading state
+      const label = document.getElementById('fm-upload-label');
+      const origHTML = label.innerHTML;
+      label.innerHTML = '<span class="material-symbols-outlined" style="color:#fff;font-size:16px;">hourglass_top</span> Uploading…';
+
+      fetch(fmUrl('upload'), {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken },
+        credentials: 'same-origin',
+        body: fd
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok) { fmBrowse(fmCwd); } else { alert('Upload failed: ' + d.error); }
+        })
+        .catch(err => alert('Upload error: ' + err))
+        .finally(() => {
+          label.innerHTML = origHTML;
+          document.getElementById('fm-upload-input').value = '';
+        });
+    });
+
+    // New Folder
+    document.getElementById('fm-mkdir-btn').addEventListener('click', function () {
+      document.getElementById('mkdir-name').value = '';
+      openModal('modal-mkdir');
+      setTimeout(() => document.getElementById('mkdir-name').focus(), 100);
+    });
+    document.getElementById('mkdir-submit').addEventListener('click', function () {
+      const name = document.getElementById('mkdir-name').value.trim();
+      if (!name) { alert('Please enter a folder name'); return; }
+      postJSON(fmUrl('mkdir'), { path: fmCwd, name: name })
+        .then(d => {
+          if (d.ok) { closeModal('modal-mkdir'); fmBrowse(fmCwd); }
+          else { alert('Error: ' + d.error); }
+        })
+        .catch(err => alert('Error: ' + err));
+    });
+    // Enter key in mkdir
+    document.getElementById('mkdir-name').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('mkdir-submit').click(); }
+    });
+
+    // Rename
+    function fmRenamePrompt(path, name) {
+      document.getElementById('rename-input').value = name;
+      document.getElementById('rename-src').value = path;
+      document.getElementById('rename-dir').value = path.substring(0, path.lastIndexOf('/')) || '/';
+      openModal('modal-rename');
+      setTimeout(() => {
+        const inp = document.getElementById('rename-input');
+        inp.focus();
+        // Select filename without extension
+        const dotIdx = name.lastIndexOf('.');
+        if (dotIdx > 0) inp.setSelectionRange(0, dotIdx);
+        else inp.select();
+      }, 100);
+    }
+    document.getElementById('rename-submit').addEventListener('click', function () {
+      const newName = document.getElementById('rename-input').value.trim();
+      const src = document.getElementById('rename-src').value;
+      const dir = document.getElementById('rename-dir').value;
+      if (!newName) { alert('Please enter a name'); return; }
+      const dst = dir + (dir.endsWith('/') ? '' : '/') + newName;
+      postJSON(fmUrl('rename'), { src: src, dst: dst })
+        .then(d => {
+          if (d.ok) { closeModal('modal-rename'); fmBrowse(fmCwd); }
+          else { alert('Error: ' + d.error); }
+        })
+        .catch(err => alert('Error: ' + err));
+    });
+    document.getElementById('rename-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('rename-submit').click(); }
+    });
+
+    // Delete
+    function fmDeleteConfirm(path, name, isDir) {
+      const type = isDir ? 'directory' : 'file';
+      const extra = isDir ? '\n\nThis will delete all contents recursively!' : '';
+      if (!confirm('Delete ' + type + ' "' + name + '"?' + extra)) return;
+      postJSON(fmUrl('delete'), { path: path })
+        .then(d => {
+          if (d.ok) { fmBrowse(fmCwd); }
+          else { alert('Error: ' + d.error); }
+        })
+        .catch(err => alert('Error: ' + err));
+    }
+
+    // Refresh
+    document.getElementById('fm-refresh-btn').addEventListener('click', () => fmBrowse(fmCwd));
+
+    // --- Modal helpers ---
+    window.openModal = function (id) { document.getElementById(id).classList.add('open'); };
+    window.closeModal = function (id) { document.getElementById(id).classList.remove('open'); };
+    // Close modal on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(ov => {
+      ov.addEventListener('click', function (e) { if (e.target === ov) ov.classList.remove('open'); });
+    });
+    // Close modal on Escape
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.open').forEach(ov => ov.classList.remove('open'));
+      }
+    });
+});
+  </script>
+{% include "includes/alert_toasts.html" %}
+
+<!-- ═══════ FLOATING QUICK ACTIONS BAR ═══════ -->
+<div class="qa-bar">
+  <div class="qa-label">
+    <span class="material-symbols-outlined" style="font-size:16px;color:var(--accent)">bolt</span> Quick Actions
+  </div>
+  <button class="qa-btn restart" onclick="qaAction('restart')">
+    <span class="material-symbols-outlined">restart_alt</span> Restart
+  </button>
+  <button class="qa-btn shutdown" onclick="qaAction('shutdown')">
+    <span class="material-symbols-outlined">power_settings_new</span> Shutdown
+  </button>
+
+  <button class="qa-btn sleep" onclick="qaAction('sleep')">
+    <span class="material-symbols-outlined">bedtime</span> Sleep
+  </button>
+  <button class="qa-btn wake" onclick="qaAction('wake')">
+    <span class="material-symbols-outlined">power</span> Wake
+  </button>
+  <button class="qa-btn cancel-sd" id="qa-cancel-sd" onclick="qaAction('cancel-shutdown')">
+    <span class="material-symbols-outlined">cancel</span> Cancel Shutdown
+  </button>
+</div>
+
+<!-- Confirm overlay -->
+<div class="qa-confirm-overlay" id="qa-confirm-overlay">
+  <div class="qa-confirm">
+    <h3 id="qa-cf-title"></h3>
+    <p id="qa-cf-body"></p>
+    <div class="qa-cf-btns">
+      <button class="qa-cf-btn cancel" id="qa-cf-cancel">Cancel</button>
+      <button class="qa-cf-btn do" id="qa-cf-confirm">Confirm</button>
     </div>
   </div>
 </div>
+
 <script>
-  // Minimal integrations for VNC, Glances, and WebSSH while keeping the original look
-  document.addEventListener('DOMContentLoaded', function(){
-    function getCookie(name){ const value = `; ${document.cookie}`; const parts = value.split(`; ${name}=`); if(parts.length===2) return parts.pop().split(';').shift(); }
-    const csrftoken = getCookie('csrftoken');
-    const navItems = document.querySelectorAll('aside button');
-    const vncBtn = navItems[0];
-  const glancesBtn = document.getElementById('glances-nav-btn');
-    const sshBtn = navItems[2];
+(function() {
+  const CLIENT_ID = {{ client.id }};
+  const CLIENT_NAME = '{{ client.name|escapejs }}';
+  const CLIENT_IP = '{{ client.ip_address }}';
+  const csrfToken = '{{ csrf_token }}';
 
-    const defaultCenter = document.getElementById('default-center');
-    const panes = {
-      vnc: document.getElementById('vnc-view'),
-      glances: document.getElementById('glances-view'),
-      ssh: document.getElementById('ssh-view'),
+  const actionMeta = {
+    'shutdown':        { label: 'Shut Down', destructive: true, color: 'red' },
+    'restart':         { label: 'Restart', destructive: true, color: 'amber' },
+    'logoff':          { label: 'Log Off', destructive: true, color: 'orange' },
+    'lock':            { label: 'Lock', destructive: false },
+    'sleep':           { label: 'Sleep', destructive: false },
+    'wake':            { label: 'Wake', destructive: false },
+    'cancel-shutdown': { label: 'Cancel Shutdown', destructive: false },
+  };
+
+  window.qaAction = function(action) {
+    const meta = actionMeta[action];
+    if (meta.destructive) {
+      qaConfirm(action, meta);
+    } else {
+      qaExecute(action);
+    }
+  };
+
+  function qaConfirm(action, meta) {
+    const overlay = document.getElementById('qa-confirm-overlay');
+    document.getElementById('qa-cf-title').textContent = meta.label + ' ' + CLIENT_NAME + '?';
+    document.getElementById('qa-cf-body').innerHTML = 'Are you sure you want to <strong>' + meta.label.toLowerCase() + '</strong> <strong>' + CLIENT_NAME + '</strong> (' + CLIENT_IP + ')?<br><span style="color:var(--warning)">⚠️ This will affect the current user session.</span>';
+    const confirmBtn = document.getElementById('qa-cf-confirm');
+    confirmBtn.className = 'qa-cf-btn do ' + (meta.color || 'red');
+    confirmBtn.textContent = meta.label;
+    confirmBtn.disabled = false;
+    overlay.classList.add('open');
+
+    document.getElementById('qa-cf-cancel').onclick = function() { overlay.classList.remove('open'); };
+    confirmBtn.onclick = function() {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<span class="qa-spinner"></span> Working…';
+      qaExecute(action, function() { overlay.classList.remove('open'); });
     };
-    function hideAll(){ Object.values(panes).forEach(p=>{ if(p) p.style.display='none'; }); if(defaultCenter) defaultCenter.style.display='flex'; }
-    function showPane(key){ if(defaultCenter) defaultCenter.style.display='none'; Object.entries(panes).forEach(([k,p])=>{ if(p) p.style.display = (k===key? 'block':'none'); }); }
+    overlay.onclick = function(e) { if (e.target === overlay) overlay.classList.remove('open'); };
+  }
 
-    // VNC
-    function startVnc(){
-      const iframe = document.getElementById('vnc-iframe');
-      if (iframe && iframe.src && iframe.src !== 'about:blank'){ showPane('vnc'); return; }
-      fetch("{% url 'clients:start_vnc' client.id %}", { method:'POST', headers:{'X-CSRFToken': csrftoken} })
-        .then(r=>r.ok ? r.json() : r.text().then(t=>{throw new Error(t||('HTTP '+r.status))}))
-        .then(d=>{ if(d.ok && d.url){ iframe.src = d.url; showPane('vnc'); } else { alert(d.error||'Failed to start VNC'); } })
-        .catch(err=>alert('Error: '+err));
-    }
-    function stopVnc(){
-      fetch("{% url 'clients:stop_vnc' client.id %}", { method:'POST', headers:{'X-CSRFToken': csrftoken} })
-        .then(r=>r.ok ? r.json() : r.text().then(t=>{throw new Error(t||('HTTP '+r.status))}))
-        .then(d=>{ const iframe = document.getElementById('vnc-iframe'); if(iframe) iframe.src='about:blank'; hideAll(); })
-        .catch(err=>alert('Error: '+err));
-    }
-  function toggleVnc(){ const v = panes.vnc; if(v && v.style.display==='block'){ stopVnc(); } else { startVnc(); } }
-
-    // Glances (no backend needed, just iframe to client glances)
-    function openGlances(){
-      const iframe = document.getElementById('glances-iframe');
-      if(iframe && (iframe.src === 'about:blank' || iframe.src === '')){
-        iframe.src = '{{ glances_url }}';
-      }
-      showPane('glances');
-    }
-
-    // WebSSH
-    function openSSH(){
-      const iframe = document.getElementById('ssh-iframe');
-      fetch("{% url 'clients:start_ssh' client.id %}", { method:'POST', headers:{'X-CSRFToken': csrftoken} })
-        .then(r=>r.ok ? r.json() : r.text().then(t=>{throw new Error(t||('HTTP '+r.status))}))
-        .then(d=>{ if(d.ok && d.url){ iframe.src = d.url; showPane('ssh'); } else { alert(d.error||'Failed to start SSH'); } })
-        .catch(err=>alert('Error: '+err));
-    }
-    function stopSSH(){
-      fetch("{% url 'clients:stop_ssh' client.id %}", { method:'POST', headers:{'X-CSRFToken': csrftoken} })
-        .then(r=>r.ok ? r.json() : r.text().then(t=>{throw new Error(t||('HTTP '+r.status))}))
-        .then(d=>{ const iframe = document.getElementById('ssh-iframe'); if(iframe) iframe.src='about:blank'; hideAll(); })
-        .catch(err=>alert('Error: '+err));
-    }
-
-    if (vncBtn) vncBtn.addEventListener('click', function(e){ e.preventDefault(); toggleVnc(); });
-    if (glancesBtn) glancesBtn.addEventListener('click', function(e){ e.preventDefault(); openGlances(); });
-    if (sshBtn) sshBtn.addEventListener('click', function(e){ e.preventDefault(); openSSH(); });
-
-    // Attach explicit Start/Stop buttons
-  const vt = document.getElementById('vnc-stop-btn'); if (vt) vt.onclick = ()=>{ stopVnc(); };
-  const st = document.getElementById('ssh-stop-btn'); if (st) st.onclick = ()=>{ stopSSH(); };
-
-    // Mobile sidebar toggle styling + behavior
-    const sidebarToggle = document.getElementById('sidebar-toggle');
-    const sidebar = document.querySelector('aside');
-    if (sidebarToggle && sidebar) {
-      sidebarToggle.addEventListener('click', (e)=>{
-        e.preventDefault();
-        const isHidden = sidebar.classList.contains('-translate-x-full');
-        if (isHidden) {
-          sidebar.classList.remove('-translate-x-full');
-          sidebarToggle.setAttribute('aria-expanded','true');
-        } else {
-          sidebar.classList.add('-translate-x-full');
-          sidebarToggle.setAttribute('aria-expanded','false');
+  function qaExecute(action, onDone) {
+    const url = '/clients/' + CLIENT_ID + '/action/' + action + '/';
+    fetch(url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken },
+      credentials: 'same-origin'
+    }).then(r => r.json()).then(d => {
+      if (d.ok) {
+        qaToast('✅ ' + d.message, 'success');
+        if (action === 'shutdown' || action === 'restart') {
+          document.getElementById('qa-cancel-sd').classList.add('visible');
         }
-      });
-    }
-  });
-  </script>
-</body></html>
+      } else {
+        qaToast('❌ ' + (d.error || 'Unknown error'), 'error');
+      }
+      if (onDone) setTimeout(onDone, 400);
+    }).catch(e => {
+      qaToast('❌ Network error', 'error');
+      if (onDone) setTimeout(onDone, 400);
+    });
+  }
+
+  function qaToast(msg, type) {
+    const el = document.createElement('div');
+    el.className = 'qa-result ' + type;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 5000);
+  }
+})();
+</script>
+</body>
+
+</html>

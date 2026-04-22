@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring Rules — RMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined" rel="stylesheet">
+  <style>
+    :root { --bg:#0b0f1a; --surface:#141929; --card:#1a2035; --border:#252d44; --text:#e2e8f0; --sub:#8892a8; --accent:#6366f1; --accent2:#818cf8; --danger:#ef4444; --success:#22c55e; --warning:#f59e0b; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text); }
+    a { text-decoration:none; color:inherit; }
+    .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; font-size:20px; line-height:1; color:var(--sub); }
+
+    .header { background:linear-gradient(135deg,#141929 0%,#1a1040 100%); border-bottom:1px solid var(--border); padding:0 32px; height:64px; display:flex; align-items:center; justify-content:space-between; }
+    .header-left { display:flex; align-items:center; gap:14px; }
+    .logo { width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#a855f7);display:flex;align-items:center;justify-content:center; }
+    .logo .material-symbols-outlined { color:#fff;font-size:18px }
+    .header h1 { font-size:17px; font-weight:700; color:#f1f5f9; }
+    .btn { background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--text); padding:8px 16px; border-radius:10px; font-weight:500; display:inline-flex; gap:7px; align-items:center; font-size:13px; transition:all .2s; font-family:inherit; cursor:pointer; }
+    .btn:hover { background:rgba(255,255,255,.1); }
+    .btn-accent { background:var(--accent); border-color:transparent; color:#fff; }
+    .btn-accent:hover { background:var(--accent2); }
+    .btn-success { background:var(--success); border-color:transparent; color:#fff; }
+    .btn-success:hover { background:#16a34a; }
+
+    .container { max-width:1100px; margin:0 auto; padding:24px 32px; }
+
+    .rule-section { margin-bottom:32px; }
+    .section-header {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border);
+    }
+    .section-title { font-size:14px; font-weight:700; color:#f1f5f9; display:flex; align-items:center; gap:10px; }
+    .section-count { font-size:11px; color:var(--sub); background:var(--border); padding:2px 10px; border-radius:6px; font-weight:600; }
+
+    .rules-grid { display:flex; flex-wrap:wrap; gap:8px; }
+    .rule-chip {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 12px 6px 14px; border-radius:8px;
+      background:var(--surface); border:1px solid var(--border);
+      font-size:13px; font-weight:500; transition:all .15s;
+    }
+    .rule-chip.inactive { opacity:.4; }
+    .rule-chip .del-btn {
+      background:transparent; border:none; cursor:pointer; padding:2px;
+      display:flex; align-items:center; border-radius:4px; transition:all .15s;
+    }
+    .rule-chip .del-btn:hover { background:rgba(239,68,68,.2); }
+    .rule-chip .del-btn .material-symbols-outlined { font-size:14px; color:var(--sub); }
+    .rule-chip .del-btn:hover .material-symbols-outlined { color:var(--danger); }
+
+    /* Add form */
+    .add-row { display:flex; gap:8px; margin-top:10px; }
+    .add-input {
+      flex:1; padding:8px 14px; border-radius:8px; border:1px solid var(--border);
+      background:var(--bg); color:var(--text); font-family:inherit; font-size:13px;
+    }
+    .add-input:focus { outline:none; border-color:var(--accent); }
+    .add-input::placeholder { color:var(--sub); }
+
+    /* Bulk import modal */
+    .modal-overlay {
+      display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+      background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
+      z-index:1000; align-items:center; justify-content:center;
+    }
+    .modal-overlay.open { display:flex; }
+    .modal {
+      background:var(--surface); border:1px solid var(--border); border-radius:16px;
+      width:100%; max-width:560px; padding:24px;
+      box-shadow:0 20px 60px rgba(0,0,0,.5);
+    }
+    .modal h3 { font-size:16px; font-weight:700; color:#f1f5f9; margin-bottom:4px; display:flex; align-items:center; gap:10px; }
+    .modal p { font-size:12px; color:var(--sub); margin-bottom:14px; }
+    .modal textarea {
+      width:100%; height:180px; padding:12px 14px; border-radius:10px;
+      border:1px solid var(--border); background:var(--bg); color:var(--text);
+      font-family:'Inter',monospace; font-size:13px; resize:vertical;
+    }
+    .modal textarea:focus { outline:none; border-color:var(--accent); }
+    .modal textarea::placeholder { color:var(--sub); }
+    .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
+
+    .bulk-result {
+      margin-top:10px; padding:10px 14px; border-radius:8px;
+      font-size:13px; font-weight:500; display:none;
+    }
+    .bulk-result.show { display:block; }
+    .bulk-result.success { background:rgba(34,197,94,.12); color:#86efac; border:1px solid rgba(34,197,94,.3); }
+    .bulk-result.error { background:rgba(239,68,68,.12); color:#fca5a5; border:1px solid rgba(239,68,68,.3); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo"><span class="material-symbols-outlined">rule_settings</span></div>
+      <h1>Monitoring Rules</h1>
+    </div>
+    <div style="display:flex;gap:10px">
+      <a href="{% url 'alerts:dashboard' %}" class="btn">
+        <span class="material-symbols-outlined" style="font-size:16px;color:var(--text)">arrow_back</span> Alerts
+      </a>
+      <a href="{% url 'clients:overview' %}" class="btn">
+        <span class="material-symbols-outlined" style="font-size:16px;color:var(--text)">home</span> Dashboard
+      </a>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Process Names -->
+    <div class="rule-section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="material-symbols-outlined" style="color:var(--danger);font-size:18px">sports_esports</span>
+          Processes
+          <span class="section-count" id="count-process">{{ process_rules|length }}</span>
+        </div>
+      </div>
+      <div class="rules-grid" id="grid-process_name">
+        {% for rule in process_rules %}
+        <div class="rule-chip {% if not rule.is_active %}inactive{% endif %}" data-id="{{ rule.id }}">
+          {{ rule.value }}
+          <button class="del-btn" title="Delete" onclick="deleteRule({{ rule.id }}, this)">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="add-row">
+        <input class="add-input" id="input-process_name" placeholder="e.g. VALORANT, csgo, Minecraft…">
+        <button class="btn btn-accent" onclick="addRule('process_name')">
+          <span class="material-symbols-outlined" style="font-size:16px;color:#fff">add</span> Add
+        </button>
+        <button class="btn" onclick="openBulk('process_name')">
+          <span class="material-symbols-outlined" style="font-size:16px;color:var(--text)">playlist_add</span> Bulk Add
+        </button>
+      </div>
+    </div>
+
+    <!-- Window Keywords -->
+    <div class="rule-section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="material-symbols-outlined" style="color:var(--warning);font-size:18px">language</span>
+          Window Title Keywords
+          <span class="section-count" id="count-keyword">{{ keyword_rules|length }}</span>
+        </div>
+      </div>
+      <div class="rules-grid" id="grid-window_keyword">
+        {% for rule in keyword_rules %}
+        <div class="rule-chip {% if not rule.is_active %}inactive{% endif %}" data-id="{{ rule.id }}">
+          {{ rule.value }}
+          <button class="del-btn" title="Delete" onclick="deleteRule({{ rule.id }}, this)">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="add-row">
+        <input class="add-input" id="input-window_keyword" placeholder="e.g. friv, poki, unblocked games…">
+        <button class="btn btn-accent" onclick="addRule('window_keyword')">
+          <span class="material-symbols-outlined" style="font-size:16px;color:#fff">add</span> Add
+        </button>
+        <button class="btn" onclick="openBulk('window_keyword')">
+          <span class="material-symbols-outlined" style="font-size:16px;color:var(--text)">playlist_add</span> Bulk Add
+        </button>
+      </div>
+    </div>
+
+    <!-- Website Domains -->
+    <div class="rule-section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="material-symbols-outlined" style="color:var(--accent);font-size:18px">public</span>
+          Website Domains
+          <span class="section-count" id="count-domain">{{ domain_rules|length }}</span>
+        </div>
+      </div>
+      <div class="rules-grid" id="grid-website_domain">
+        {% for rule in domain_rules %}
+        <div class="rule-chip {% if not rule.is_active %}inactive{% endif %}" data-id="{{ rule.id }}">
+          {{ rule.value }}
+          <button class="del-btn" title="Delete" onclick="deleteRule({{ rule.id }}, this)">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="add-row">
+        <input class="add-input" id="input-website_domain" placeholder="e.g. newgame.com, epicgames.com…">
+        <button class="btn btn-accent" onclick="addRule('website_domain')">
+          <span class="material-symbols-outlined" style="font-size:16px;color:#fff">add</span> Add
+        </button>
+        <button class="btn" onclick="openBulk('website_domain')">
+          <span class="material-symbols-outlined" style="font-size:16px;color:var(--text)">playlist_add</span> Bulk Add
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Import Modal -->
+  <div class="modal-overlay" id="bulk-modal">
+    <div class="modal">
+      <h3>
+        <span class="material-symbols-outlined" style="color:var(--accent);font-size:20px">playlist_add</span>
+        Bulk Import — <span id="bulk-type-label"></span>
+      </h3>
+      <p>Paste one entry per line, comma-separated, or numbered lists. Duplicates are automatically skipped.</p>
+      <textarea id="bulk-textarea" placeholder="VALORANT
+csgo
+Minecraft
+steam
+FortniteClient-Win64-Shipping"></textarea>
+      <div class="bulk-result" id="bulk-result"></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeBulk()">Cancel</button>
+        <button class="btn btn-success" id="bulk-submit-btn" onclick="submitBulk()">
+          <span class="material-symbols-outlined" style="font-size:16px;color:#fff">upload</span> Import
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const csrftoken = '{{ csrf_token }}';
+    let currentBulkType = '';
+
+    const typeLabels = {
+      'process_name': 'Processes',
+      'window_keyword': 'Window Keywords',
+      'website_domain': 'Website Domains',
+    };
+
+    function addRule(ruleType) {
+      const input = document.getElementById('input-' + ruleType);
+      const value = input.value.trim();
+      if (!value) return;
+      fetch('{% url "alerts:rule_add" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rule_type: ruleType, value: value }),
+        credentials: 'same-origin',
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) {
+          const grid = document.getElementById('grid-' + ruleType);
+          const chip = document.createElement('div');
+          chip.className = 'rule-chip';
+          chip.dataset.id = d.id;
+          chip.innerHTML = `${value} <button class="del-btn" title="Delete" onclick="deleteRule(${d.id}, this)"><span class="material-symbols-outlined">close</span></button>`;
+          grid.appendChild(chip);
+          input.value = '';
+        } else {
+          alert(d.error || 'Failed to add rule');
+        }
+      });
+    }
+
+    function deleteRule(id, btn) {
+      if (!confirm('Delete this rule?')) return;
+      fetch(`/alerts/rules/${id}/delete/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken },
+        credentials: 'same-origin',
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) {
+          const chip = btn.closest('.rule-chip');
+          chip.style.opacity = '0';
+          chip.style.transform = 'scale(.8)';
+          chip.style.transition = 'all .2s';
+          setTimeout(() => chip.remove(), 200);
+        }
+      });
+    }
+
+    // Enter key to submit single add
+    document.querySelectorAll('.add-input').forEach(input => {
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          const ruleType = input.id.replace('input-', '');
+          addRule(ruleType);
+        }
+      });
+    });
+
+    // ---- Bulk Import ----
+    function openBulk(ruleType) {
+      currentBulkType = ruleType;
+      document.getElementById('bulk-type-label').textContent = typeLabels[ruleType] || ruleType;
+      document.getElementById('bulk-textarea').value = '';
+      document.getElementById('bulk-result').className = 'bulk-result';
+      document.getElementById('bulk-result').textContent = '';
+      document.getElementById('bulk-submit-btn').disabled = false;
+      document.getElementById('bulk-modal').classList.add('open');
+      document.getElementById('bulk-textarea').focus();
+    }
+
+    function closeBulk() {
+      document.getElementById('bulk-modal').classList.remove('open');
+      currentBulkType = '';
+    }
+
+    function submitBulk() {
+      const text = document.getElementById('bulk-textarea').value.trim();
+      if (!text) return;
+      const btn = document.getElementById('bulk-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;color:#fff">hourglass_top</span> Importing…';
+
+      fetch('{% url "alerts:rule_bulk_add" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rule_type: currentBulkType, values: text }),
+        credentials: 'same-origin',
+      })
+      .then(r => r.json())
+      .then(d => {
+        const resultEl = document.getElementById('bulk-result');
+        if (d.ok) {
+          resultEl.className = 'bulk-result show success';
+          resultEl.textContent = `Added ${d.added} new rules. ${d.skipped} duplicates skipped.`;
+          // Reload page after 1.5s to show the new chips
+          setTimeout(() => location.reload(), 1500);
+        } else {
+          resultEl.className = 'bulk-result show error';
+          resultEl.textContent = d.error || 'Import failed.';
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;color:#fff">upload</span> Import';
+        }
+      })
+      .catch(err => {
+        const resultEl = document.getElementById('bulk-result');
+        resultEl.className = 'bulk-result show error';
+        resultEl.textContent = 'Network error: ' + err;
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;color:#fff">upload</span> Import';
+      });
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeBulk();
+    });
+
+    // Close modal on overlay click
+    document.getElementById('bulk-modal').addEventListener('click', e => {
+      if (e.target === document.getElementById('bulk-modal')) closeBulk();
+    });
+  </script>
+</body>
+</html>
